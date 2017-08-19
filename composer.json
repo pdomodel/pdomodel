@@ -1,0 +1,12 @@
+{
+  "name": "phpset/pdomodel",
+  "description": "Simple PDO-based Model",
+  "require": {
+    "ext-pdo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "PdoModel\\": "src"
+    }
+  }
+}
