@@ -32,12 +32,18 @@ class PdoModel extends PdoHandler
      * @return PdoResult
      * @throws \Exception
      */
-    public function select(array $whereCriteria, $order = '', $limit = false, $offset = false)
+    public function select(array $whereCriteria, $order = '', $limit = false, $offset = false, $columns = [])
     {
         $criteria = $this->buildWhere($whereCriteria);
         $timeStart = microtime(true);
 
-        $sql = "SELECT * FROM {$this->getTable()} WHERE " . $criteria['where'];
+        if ($columns && count($columns)) {
+            $columns = trim(implode(',', $columns));
+        } else {
+            $columns = '*';
+        }
+
+        $sql = "SELECT {$columns} FROM {$this->getTable()} WHERE " . $criteria['where'];
 
         if ($order) {
             $sql .= " ORDER BY " . $order;
@@ -257,7 +263,7 @@ class PdoModel extends PdoHandler
         $sql = "INSERT INTO `{$this->getTable()}` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
         $sth = $this->prepare($sql);
         $result = $this->execute($sth, $values);
-        
+
         $this->log(self::INSERT_UPDATE, $sql, $values, $timeStart);
         return $result;
     }
@@ -384,7 +390,8 @@ class PdoModel extends PdoHandler
         $timeStart = microtime(true);
         $sql = "DELETE FROM {$this->getTable()} WHERE " . $criteria['where'];
         $sth = $this->prepare($sql);
-        $result = $this->execute($sth, $criteria['values']);
+        $this->execute($sth, $criteria['values']);
+        $result = (int)$sth->rowCount();
 
         if ($records) {
             foreach ($records as $record) {
@@ -414,10 +421,10 @@ class PdoModel extends PdoHandler
                 if (!in_array($operand, $this->whereOperands)) {
                     throw new \Exception("Unsupported operand $operand in WHERE statement.");
                 }
-                $pairs[] = "`{$key}` {$operand} ?";
+                $pairs[] = "{$key} {$operand} ?";
                 $values[] = $value;
             } else {
-                $pairs[] = "`{$k}` = ?";
+                $pairs[] = "{$k} = ?";
                 $values[] = $v;
             }
         }
@@ -478,7 +485,7 @@ class PdoModel extends PdoHandler
             call_user_func_array($this->changeListenerCallback, [&$id, &$data]);
         }
     }
-    
+
     private function execute(\PDOStatement $sth, $data = null)
     {
         try {
