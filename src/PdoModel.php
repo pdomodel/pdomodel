@@ -87,13 +87,13 @@ class PdoModel extends PdoHandler
     public function find($id)
     {
         $timeStart = microtime(true);
-        $sql = "SELECT * FROM {$this->getTable()} WHERE id = ? LIMIT 1";
+        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ? LIMIT 1";
         $sth = $this->prepare($sql);
         $this->execute($sth, [(int)$id]);
 
         $this->log(self::SELECT, $sql, $id, $timeStart);
 
-        return $sth->fetch();
+        return $sth->fetch(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -109,7 +109,7 @@ class PdoModel extends PdoHandler
         $sth = $this->prepare($sql);
 
         $this->execute($sth, $criteria['values']);
-        $result = $sth->fetch();
+        $result = $sth->fetch(\PDO::FETCH_ASSOC);
         $this->log(self::SELECT, $sql, $criteria['values'], $timeStart);
 
         return (int)$result['count(*)'];
@@ -144,7 +144,7 @@ class PdoModel extends PdoHandler
         $sql = "SELECT MIN({$column}) FROM {$this->getTable()}";
         $sth = $this->prepare($sql);
         $this->execute($sth);
-        $result = $sth->fetch();
+        $result = $sth->fetch(\PDO::FETCH_ASSOC);
 
         $this->log(self::SELECT, $sql, [], $timeStart);
 
@@ -162,7 +162,7 @@ class PdoModel extends PdoHandler
         $sql = "SELECT SUM({$column}) FROM {$this->getTable()}";
         $sth = $this->prepare($sql);
         $this->execute($sth);
-        $result = $sth->fetch();
+        $result = $sth->fetch(\PDO::FETCH_ASSOC);
 
         $this->log(self::SELECT, $sql, [], $timeStart);
 
@@ -362,7 +362,7 @@ class PdoModel extends PdoHandler
         $record = $this->find($id);
 
         $timeStart = microtime(true);
-        $sql = "DELETE FROM {$this->getTable()} WHERE id = ?";
+        $sql = "DELETE FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ?";
         $sth = $this->prepare($sql);
         $result = $this->execute($sth, [(int)$id]);
 
