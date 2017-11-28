@@ -9,6 +9,9 @@ use \PDOStatement;
  */
 class PdoResult
 {
+    /**
+     * @var PDOStatement
+     */
     protected $statement;
 
     public function __construct(PDOStatement $statement)
@@ -16,25 +19,35 @@ class PdoResult
         $this->statement = $statement;
     }
 
-    // Returns single row | order?
-    public function first()
+    /**
+     * Fetch the first row from a result set
+     * @param int $fetchStyle
+     * @return mixed
+     * @see \PDOStatement::fetch()
+     */
+    public function first($fetchStyle = \PDO::FETCH_ASSOC)
     {
-        return $this->statement->fetch();
+        return $this->statement->fetch($fetchStyle);
     }
 
-    // Returns value of single row | order?
+    /**
+     * Fetch the value of first row from a result set
+     * @param $columnName
+     * @return mixed
+     * @see \PDOStatement::fetch()
+     */
     public function value($columnName)
     {
         return $this->first()[$columnName];
     }
 
-    public function column($columnName, $limit = 0, $order = false)
+    public function column($columnNumber = 0)
     {
-        return $this->statement->fetchColumn(0);
+        return $this->statement->fetchColumn($columnNumber);
     }
 
-    public function all()
+    public function all($fetchStyle = \PDO::FETCH_ASSOC)
     {
-        return $this->statement->fetchAll();
+        return $this->statement->fetchAll($fetchStyle);
     }
 }
