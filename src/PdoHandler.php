@@ -19,7 +19,8 @@ class PdoHandler
         return $this;
     }
 
-    public function setPrimaryKey($key){
+    public function setPrimaryKey($key)
+    {
         $this->primaryKey = $key;
         return $this;
     }
