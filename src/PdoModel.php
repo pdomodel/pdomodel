@@ -176,11 +176,15 @@ class PdoModel extends PdoHandler
      * @return bool|int
      * @throws \Exception
      */
-    public function insert(array $data)
+    public function insert(array $data, $ignore = false)
     {
         $timeStart = microtime(true);
+        $ignoreSql = '';
+        if ($ignore){
+            $ignoreSql = 'IGNORE ';
+        }
         $insertData = $this->prepareInsertData($data);
-        $sql = "INSERT INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
+        $sql = 'INSERT ' . $ignoreSql . "INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
         $sth = $this->prepare($sql);
 
         $this->execute($sth, $insertData['values']);
@@ -195,9 +199,10 @@ class PdoModel extends PdoHandler
 
     /**
      * @param array $arraysOfData
+     * @param bool $ignore
      * @return bool
      */
-    public function insertBatch(array $arraysOfData)
+    public function insertBatch(array $arraysOfData, $ignore = false)
     {
         $keys = array_keys($arraysOfData[0]);
         $values = [];
@@ -206,11 +211,11 @@ class PdoModel extends PdoHandler
                 $values[] = $value;
             }
         }
-        $res = $this->insertBatchRaw($keys, $values);
+        $res = $this->insertBatchRaw($keys, $values, $ignore);
         return $res;
     }
 
-    private function insertBatchRaw(array $keys, array $values)
+    private function insertBatchRaw(array $keys, array $values, $ignore = false)
     {
         // Hard but fast
         $keysCount = count($keys);
@@ -226,11 +231,17 @@ class PdoModel extends PdoHandler
         $valuesOffset = 0;
 
         $res = false;
+
+        $ignoreSql = '';
+        if ($ignore){
+            $ignoreSql = 'IGNORE ';
+        }
+
         foreach (array_chunk($valuesSql, $valuesSqlChunkSize) as $valuesSqlPart) {
             $valuesPart = array_slice($values, $valuesOffset * $valuesSqlChunkSize * $keysCount, $valuesChunkSize);
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
-            $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart}";
+            $sql = 'INSERT ' . $ignoreSql . "INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart}";
             $sth = $this->prepare($sql);
             $res = $this->execute($sth, $valuesPart);
 
