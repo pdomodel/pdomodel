@@ -16,8 +16,13 @@ class PdoModel extends PdoHandler
         '>',
         '<',
         '=',
+        '!=',
         '>=',
         '<=',
+        'IN',
+        'in',
+        'NOT IN',
+        'not in',
     ];
 
     private $changeListenerCallback;
@@ -29,10 +34,12 @@ class PdoModel extends PdoHandler
      * @param string $order (example: 'id DESC')
      * @param bool $limit
      * @param bool $offset
+     * @param bool|string $groupBy
+     * @param array $columns
      * @return PdoResult
      * @throws \Exception
      */
-    public function select(array $whereCriteria, $order = '', $limit = false, $offset = false, $columns = [])
+    public function select(array $whereCriteria, $order = '', $limit = false, $offset = false, $groupBy = false, array $columns = [])
     {
         $criteria = $this->buildWhere($whereCriteria);
         $timeStart = microtime(true);
@@ -44,6 +51,10 @@ class PdoModel extends PdoHandler
         }
 
         $sql = "SELECT {$columns} FROM {$this->getTable()} WHERE " . $criteria['where'];
+
+        if ($groupBy) {
+            $sql .= " GROUP BY " . $groupBy;
+        }
 
         if ($order) {
             $sql .= " ORDER BY " . $order;
@@ -432,6 +443,15 @@ class PdoModel extends PdoHandler
                 if (!in_array($operand, $this->whereOperands)) {
                     throw new \Exception("Unsupported operand $operand in WHERE statement.");
                 }
+
+                if ($operand == 'IN' || $operand == 'in' || $operand == 'NOT IN' || $operand == 'not in') {
+                    if (!is_array($value)) {
+                        throw new \Exception("Value for $operand operand must be type of array only.");
+                    }
+                    $pairs[] = "{$key} {$operand} (" . implode(',', $value) . ")";
+                    continue;
+                }
+
                 $pairs[] = "{$key} {$operand} ?";
                 $values[] = $value;
             } else {
@@ -502,7 +522,9 @@ class PdoModel extends PdoHandler
         try {
             $res = $sth->execute($data);
         } catch (\PDOException $e) {
-            error_log('Mysql execute error, data: ' . json_encode($data) . ' message: ' . $e->getMessage() . ', table: ' . static::getTable());
+            if ($e->getCode() != 23000) {
+                error_log('Mysql execute error, data: ' . json_encode($data) . ' message: ' . $e->getMessage() . ', table: ' . static::getTable());
+            }
             throw $e;
         }
         return $res;
