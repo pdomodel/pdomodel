@@ -291,6 +291,73 @@ class PdoModel extends PdoHandler
     }
 
     /**
+     * @param array $insert
+     * @param array $updateKeys
+     * @return bool
+     * @throws \Exception
+     */
+    public function insertUpdateBatch(array $insert,array $updateKeys)
+    {
+
+        $insertKeys = array_keys($insert[0]);
+
+        $insertValues = [];
+        foreach ($insert as $data) {
+            foreach ($data as $key => $value) {
+                $insertValues[] = $value;
+            }
+        }
+
+        $updateKeysRaw = [];
+        foreach ($updateKeys as $data) {
+            $updateKeysRaw[] = "{$data} = VALUES({$data})";
+        }
+
+        $res = $this->insertUpdateBatchRaw($insertKeys, $insertValues, $updateKeysRaw);
+        return $res;
+    }
+
+    /**
+     * @param array $insertKeys
+     * @param array $insertValues
+     * @param array $updateKeys
+     * @return bool
+     * @throws \Exception
+     */
+    private function insertUpdateBatchRaw(array $insertKeys, array $insertValues, array $updateKeys)
+    {
+        // Hard but fast
+        $keysCount = count($insertKeys);
+        $valuesCount = count($insertValues);
+        $valuesSqlCount = $valuesCount / $keysCount;
+        $valuesSqlChunkSize = floor(self::MAX_PREPARED_STMT_COUNT / $keysCount);
+        $valuesChunkSize = $valuesSqlChunkSize * $keysCount;
+        $placeHolders = array_fill(0, $keysCount, '?');
+        $placeHolders = implode(',', $placeHolders);
+        $valuesSql = array_fill(0, $valuesSqlCount, '(' . $placeHolders . ')');
+        $keys = implode(',', $insertKeys);
+        $table = $this->getTable();
+        $valuesOffset = 0;
+        $updateKeys = implode(',',$updateKeys);
+
+        $res = false;
+        foreach (array_chunk($valuesSql, $valuesSqlChunkSize) as $valuesSqlPart) {
+            $valuesPart = array_slice($insertValues, $valuesOffset * $valuesSqlChunkSize * $keysCount, $valuesChunkSize);
+            $valuesOffset++;
+            $valuesSqlPart = implode(',', $valuesSqlPart);
+            $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateKeys}";
+
+            $sth = $this->prepare($sql);
+            $res = $this->execute($sth, $valuesPart);
+
+            $id = $this->getLastInsertId();
+            $record = $this->find($id);
+            $this->changeListener($id, $record);
+        }
+        return $res;
+    }
+
+    /**
      * @param $id
      * @param $column
      * @param int $amount
