@@ -567,7 +567,7 @@ class PdoModel extends PdoHandler
         return $insertData;
     }
 
-    private function log($statement, $sql, $params, $timeStart)
+    protected function log($statement, $sql, $params, $timeStart)
     {
 //        var_dump($statement, $sql, $params, $timeStart);
     }
