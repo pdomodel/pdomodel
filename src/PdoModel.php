@@ -131,16 +131,21 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function max($column = 'id')
+    public function max($column = 'id', array $whereCriteria = [])
     {
         $timeStart = microtime(true);
+        $criteria = $this->buildWhere($whereCriteria);
+
         $sql = "SELECT MAX({$column}) FROM {$this->getTable()}";
+        if ($criteria['where']) {
+            $sql .= " WHERE " . $criteria['where'];
+        }
+
         $sth = $this->prepare($sql);
-        $this->execute($sth);
+        $this->execute($sth, $criteria['values']);
         $result = $sth->fetch();
 
         $this->log(self::SELECT, $sql, [], $timeStart);
-
         return (int)reset($result);
     }
 
@@ -149,16 +154,21 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function min($column)
+    public function min($column = 'id', array $whereCriteria = [])
     {
         $timeStart = microtime(true);
+        $criteria = $this->buildWhere($whereCriteria);
+
         $sql = "SELECT MIN({$column}) FROM {$this->getTable()}";
+        if ($criteria['where']) {
+            $sql .= " WHERE " . $criteria['where'];
+        }
+
         $sth = $this->prepare($sql);
-        $this->execute($sth);
-        $result = $sth->fetch(\PDO::FETCH_ASSOC);
+        $this->execute($sth, $criteria['values']);
+        $result = $sth->fetch();
 
         $this->log(self::SELECT, $sql, [], $timeStart);
-
         return (int)reset($result);
     }
 
@@ -191,7 +201,7 @@ class PdoModel extends PdoHandler
     {
         $timeStart = microtime(true);
         $ignoreSql = '';
-        if ($ignore){
+        if ($ignore) {
             $ignoreSql = 'IGNORE ';
         }
         $insertData = $this->prepareInsertData($data);
@@ -244,7 +254,7 @@ class PdoModel extends PdoHandler
         $res = false;
 
         $ignoreSql = '';
-        if ($ignore){
+        if ($ignore) {
             $ignoreSql = 'IGNORE ';
         }
 
@@ -296,7 +306,7 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function insertUpdateBatch(array $insert,array $updateKeys)
+    public function insertUpdateBatch(array $insert, array $updateKeys)
     {
 
         $insertKeys = array_keys($insert[0]);
@@ -338,7 +348,7 @@ class PdoModel extends PdoHandler
         $keys = implode(',', $insertKeys);
         $table = $this->getTable();
         $valuesOffset = 0;
-        $updateKeys = implode(',',$updateKeys);
+        $updateKeys = implode(',', $updateKeys);
 
         $res = false;
         foreach (array_chunk($valuesSql, $valuesSqlChunkSize) as $valuesSqlPart) {
@@ -494,11 +504,18 @@ class PdoModel extends PdoHandler
 
     // ------------------------------------- PRIVATE METHODS -------------------------------
 
-    private function buildWhere(array $whereCriteria)
+    private function buildWhere(array $whereCriteria = [])
     {
         $pairs = [];
         $values = [];
         $criteria = [];
+
+        if (!$whereCriteria || !count($whereCriteria)) {
+            return [
+                'where' => null,
+                'values' => null,
+            ];
+        }
 
         foreach ($whereCriteria as $k => $v) {
             if (is_array($v)) {
