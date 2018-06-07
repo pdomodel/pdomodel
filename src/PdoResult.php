@@ -43,7 +43,7 @@ class PdoResult
 
     public function column($columnNumber = 0)
     {
-        return $this->statement->fetchColumn($columnNumber);
+        return $this->statement->fetchAll(\PDO::FETCH_COLUMN, $columnNumber);
     }
 
     public function all($fetchStyle = \PDO::FETCH_ASSOC)
