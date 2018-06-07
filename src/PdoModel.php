@@ -50,7 +50,11 @@ class PdoModel extends PdoHandler
             $columns = '*';
         }
 
-        $sql = "SELECT {$columns} FROM {$this->getTable()} WHERE " . $criteria['where'];
+        if ($criteria['where']) {
+            $sql = "SELECT {$columns} FROM {$this->getTable()} WHERE " . $criteria['where'];
+        } else {
+            $sql = "SELECT {$columns} FROM {$this->getTable()} ";
+        }
 
         if ($groupBy) {
             $sql .= " GROUP BY " . $groupBy;

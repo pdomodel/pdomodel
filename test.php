@@ -2,10 +2,16 @@
 
 require __DIR__ . '/vendor/autoload.php';
 
+$connection = \PdoModel\PdoFactory::createConnection([
+    'host' => '127.0.0.1',
+    'database' => 'notify',
+    'username' => 'root',
+    'password' => 'root',
+]);
 
-$aaa = 12;
-$model = new \PdoModel\PdoModel(new PDO('mysql:127:0:0:1', 'root', 'root', []));
-$model->setTable('aaaa');
+$model = new \PdoModel\PdoModel($connection);
+$model->setTable('users');
 
 
-$model->max('id', []);
+$result = $model->select([], '', 100)->column(2);
+var_dump($result);
