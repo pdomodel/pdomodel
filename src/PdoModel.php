@@ -23,6 +23,10 @@ class PdoModel extends PdoHandler
         'in',
         'NOT IN',
         'not in',
+        'LIKE',
+        'like',
+        'NOT LIKE',
+        'not like',
     ];
 
     private $changeListenerCallback;
