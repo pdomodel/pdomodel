@@ -302,7 +302,11 @@ class PdoModel extends PdoHandler
 
         $sql = "INSERT INTO `{$this->getTable()}` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
         $sth = $this->prepare($sql);
-        $result = $this->execute($sth, $values);
+        if ($raw){
+            $result = $this->execute($sth);
+        } else {
+            $result = $this->execute($sth, $values);
+        }
 
         $this->log(self::INSERT_UPDATE, $sql, $values, $timeStart);
         return $result;
