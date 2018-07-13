@@ -289,15 +289,15 @@ class PdoModel extends PdoHandler
      *
      * @return bool|\PDOStatement
      */
-    public function insertUpdate(array $insert, array $update)
+    public function insertUpdate(array $insert, array $update, $raw = false)
     {
         if (empty($insert) || empty($update)) {
             return false;
         }
         $timeStart = microtime(true);
 
-        $insertData = $this->prepareUpdateData($insert);
-        $updateData = $this->prepareUpdateData($update);
+        $insertData = $this->prepareUpdateData($insert, $raw);
+        $updateData = $this->prepareUpdateData($update, $raw);
         $values = array_merge($insertData['values'], $updateData['values']);
 
         $sql = "INSERT INTO `{$this->getTable()}` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
@@ -557,14 +557,18 @@ class PdoModel extends PdoHandler
         return $criteria;
     }
 
-    private function prepareUpdateData(array $data)
+    private function prepareUpdateData(array $data, $raw = false)
     {
         $updateData = [];
         $pairs = [];
         $values = [];
 
         foreach ($data as $k => $v) {
-            $pairs[] = "`{$k}` = ?";
+            if ($raw){
+                $pairs[] = "$k = $v";
+            } else {
+                $pairs[] = "`{$k}` = ?";
+            }
             $values[] = $v;
         }
         $updateData['set'] = implode($pairs, ', ');
