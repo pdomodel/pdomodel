@@ -29,6 +29,8 @@ class PdoModel extends PdoHandler
         'not like',
         'IS',
         'is',
+        'is not',
+        'IS NOT',
     ];
 
     private $changeListenerCallback;
@@ -547,6 +549,11 @@ class PdoModel extends PdoHandler
                         throw new \Exception("Value for $operand operand must be type of array only.");
                     }
                     $pairs[] = "{$key} {$operand} (" . implode(',', $value) . ")";
+                    continue;
+                }
+
+                if ($operand == 'IS' || $operand == 'is' || $operand == 'IS NOT' || $operand == 'is not') {
+                    $pairs[] = "{$key} {$operand} NULL";
                     continue;
                 }
 
