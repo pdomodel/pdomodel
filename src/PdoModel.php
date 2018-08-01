@@ -27,6 +27,8 @@ class PdoModel extends PdoHandler
         'like',
         'NOT LIKE',
         'not like',
+        'IS',
+        'is',
     ];
 
     private $changeListenerCallback;
