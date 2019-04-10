@@ -560,8 +560,13 @@ class PdoModel extends PdoHandler
                 $pairs[] = "{$key} {$operand} ?";
                 $values[] = $value;
             } else {
-                $pairs[] = "{$k} = ?";
-                $values[] = $v;
+                if (is_int($k)) { // array index
+                    $pairs[] = $v;
+                    $values[] = null;
+                } else {
+                    $pairs[] = "{$k} = ?";
+                    $values[] = $v;
+                }
             }
         }
         $criteria['where'] = implode($pairs, ' AND ');
