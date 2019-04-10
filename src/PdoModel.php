@@ -562,7 +562,6 @@ class PdoModel extends PdoHandler
             } else {
                 if (is_int($k)) { // array index
                     $pairs[] = $v;
-                    $values[] = null;
                 } else {
                     $pairs[] = "{$k} = ?";
                     $values[] = $v;
