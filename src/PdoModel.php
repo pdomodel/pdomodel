@@ -230,6 +230,23 @@ class PdoModel extends PdoHandler
         return (int)$result;
     }
 
+    public function replace(array $data)
+    {
+        $timeStart = microtime(true);
+        $insertData = $this->prepareInsertData($data);
+        $sql = "REPLACE INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
+        $sth = $this->prepare($sql);
+
+        $this->execute($sth, $insertData['values']);
+        $result = $this->getLastInsertId();
+
+        $record = $this->find($result);
+        $this->changeListener($record['id'], $record);
+        $this->log(self::INSERT, $sql, $insertData['values'], $timeStart);
+
+        return (int)$result;
+    }
+
     /**
      * @param array $arraysOfData
      * @param bool $ignore
