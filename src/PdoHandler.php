@@ -41,8 +41,8 @@ class PdoHandler
     /**
      * @return int
      */
-    public function getLastInsertId($sequenceName = null)
+    public function getLastInsertId($sequenceName = null): int
     {
-        return $this->connection->lastInsertId($sequenceName);
+        return (int)$this->connection->lastInsertId($sequenceName);
     }
 }

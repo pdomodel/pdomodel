@@ -47,7 +47,7 @@ class PdoModel extends PdoHandler
      * @return PdoResult
      * @throws \Exception
      */
-    public function select(array $whereCriteria, $order = '', $limit = false, $offset = false, $groupBy = false, array $columns = [])
+    public function select(array $whereCriteria, string $order = null, int $limit = null, int $offset = null, string $groupBy = null, array $columns = [])
     {
         $criteria = $this->buildWhere($whereCriteria);
         $timeStart = microtime(true);
@@ -102,17 +102,12 @@ class PdoModel extends PdoHandler
         return new PdoResult($sth);
     }
 
-    /**
-     * @param $id
-     * @return array
-     * @throws \Exception
-     */
-    public function find($id)
+    public function find(int $id)
     {
         $timeStart = microtime(true);
         $sql = "SELECT * FROM {$this->getTable()} WHERE id = ? LIMIT 1";
         $sth = $this->prepare($sql);
-        $this->execute($sth, [(int)$id]);
+        $this->execute($sth, [$id]);
 
         $this->log(self::SELECT, $sql, $id, $timeStart);
 
@@ -124,7 +119,7 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function count(array $whereCriteria)
+    public function count(array $whereCriteria):int
     {
         $timeStart = microtime(true);
         $criteria = $this->buildWhere($whereCriteria);
@@ -143,7 +138,7 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function max($column = 'id', array $whereCriteria = [])
+    public function max($column = 'id', array $whereCriteria = []):int
     {
         $timeStart = microtime(true);
         $criteria = $this->buildWhere($whereCriteria);
@@ -166,7 +161,7 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function min($column = 'id', array $whereCriteria = [])
+    public function min($column = 'id', array $whereCriteria = []):int
     {
         $timeStart = microtime(true);
         $criteria = $this->buildWhere($whereCriteria);
@@ -189,7 +184,7 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function sum($column)
+    public function sum($column):int
     {
         $timeStart = microtime(true);
         $sql = "SELECT SUM({$column}) FROM {$this->getTable()}";
@@ -204,12 +199,7 @@ class PdoModel extends PdoHandler
 
     // ------------------------------- Write methods ------------------------------------
 
-    /**
-     * @param array $data
-     * @return bool|int
-     * @throws \Exception
-     */
-    public function insert(array $data, $ignore = false)
+    public function insert(array $data, bool $ignore = false):int
     {
         $timeStart = microtime(true);
         $ignoreSql = '';
@@ -230,7 +220,7 @@ class PdoModel extends PdoHandler
         return (int)$result;
     }
 
-    public function replace(array $data)
+    public function replace(array $data):int
     {
         $timeStart = microtime(true);
         $insertData = $this->prepareInsertData($data);
@@ -252,7 +242,7 @@ class PdoModel extends PdoHandler
      * @param bool $ignore
      * @return bool
      */
-    public function insertBatch(array $arraysOfData, $ignore = false)
+    public function insertBatch(array $arraysOfData, bool $ignore = false)
     {
         $keys = array_keys($arraysOfData[0]);
         $values = [];
@@ -265,7 +255,7 @@ class PdoModel extends PdoHandler
         return $res;
     }
 
-    private function insertBatchRaw(array $keys, array $values, $ignore = false)
+    private function insertBatchRaw(array $keys, array $values, bool $ignore = false)
     {
         // Hard but fast
         $keysCount = count($keys);
@@ -302,15 +292,7 @@ class PdoModel extends PdoHandler
         return $res;
     }
 
-    /**
-     * Run INSERT OR UPDATE query
-     *
-     * @param array $insert Insert data
-     * @param array $update Update data
-     *
-     * @return bool|\PDOStatement
-     */
-    public function insertUpdate(array $insert, array $update, $raw = false)
+    public function insertUpdate(array $insert, array $update, bool $raw = false)
     {
         if (empty($insert) || empty($update)) {
             return false;
@@ -407,14 +389,14 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function increment($id, $column, $amount = 1)
+    public function increment(int $id, $column, $amount = 1)
     {
         $record = $this->find($id);
 
         $timeStart = microtime(true);
         $sql = "UPDATE {$this->getTable()} SET {$column} = {$column} + {$amount} WHERE id = ?";
         $sth = $this->prepare($sql);
-        $res = $this->execute($sth, [(int)$id]);
+        $res = $this->execute($sth, [$id]);
 
         if ($record) {
             $this->changeListener($id, $record);
@@ -429,7 +411,7 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function update($id, array $data)
+    public function update(int $id, array $data)
     {
         if (empty($data)) {
             return false;
@@ -489,19 +471,19 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function delete($id)
+    public function delete(int $id)
     {
         $record = $this->find($id);
 
         $timeStart = microtime(true);
         $sql = "DELETE FROM {$this->getTable()} WHERE id = ?";
         $sth = $this->prepare($sql);
-        $result = $this->execute($sth, [(int)$id]);
+        $result = $this->execute($sth, [$id]);
 
         if ($record) {
             $this->changeListener($id, $record);
         }
-        $this->log(self::DELETE, $sql, [(int)$id], $timeStart);
+        $this->log(self::DELETE, $sql, [$id], $timeStart);
         return $result;
     }
 
@@ -510,7 +492,7 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function deleteWhere(array $whereCriteria)
+    public function deleteWhere(array $whereCriteria):int
     {
         if (empty($whereCriteria)) {
             return false;
@@ -591,7 +573,7 @@ class PdoModel extends PdoHandler
         return $criteria;
     }
 
-    private function prepareUpdateData(array $data, $raw = false)
+    private function prepareUpdateData(array $data, bool $raw = false)
     {
         $updateData = [];
         $pairs = [];
