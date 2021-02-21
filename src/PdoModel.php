@@ -110,7 +110,7 @@ class PdoModel extends PdoHandler
     public function find($id)
     {
         $timeStart = microtime(true);
-        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ? LIMIT 1";
+        $sql = "SELECT * FROM {$this->getTable()} WHERE id = ? LIMIT 1";
         $sth = $this->prepare($sql);
         $this->execute($sth, [(int)$id]);
 
@@ -494,7 +494,7 @@ class PdoModel extends PdoHandler
         $record = $this->find($id);
 
         $timeStart = microtime(true);
-        $sql = "DELETE FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ?";
+        $sql = "DELETE FROM {$this->getTable()} WHERE id = ?";
         $sth = $this->prepare($sql);
         $result = $this->execute($sth, [(int)$id]);
 
