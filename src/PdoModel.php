@@ -647,8 +647,14 @@ class PdoModel extends PdoHandler
         }
     }
 
-    private function execute(\PDOStatement $sth, $data = null)
+    private function execute(\PDOStatement $sth, array $data = null)
     {
+        foreach ($data as $item) {
+            if (is_array($item)) {
+                throw new \PDOException('Array ' . json_encode($item) . ' cant be statement value');
+            }
+        }
+
         try {
             $res = $sth->execute($data);
         } catch (\PDOException $e) {
