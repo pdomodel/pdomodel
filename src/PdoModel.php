@@ -323,7 +323,7 @@ class PdoModel extends PdoHandler
 
         $sql = "INSERT INTO `{$this->getTable()}` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
         $sth = $this->prepare($sql);
-        if ($raw){
+        if ($raw) {
             $result = $this->execute($sth);
         } else {
             $result = $this->execute($sth, $values);
@@ -585,7 +585,7 @@ class PdoModel extends PdoHandler
                 }
             }
         }
-        $criteria['where'] = implode($pairs, ' AND ');
+        $criteria['where'] = implode(' AND ', $pairs);
         $criteria['values'] = $values;
 
         return $criteria;
@@ -598,14 +598,14 @@ class PdoModel extends PdoHandler
         $values = [];
 
         foreach ($data as $k => $v) {
-            if ($raw){
+            if ($raw) {
                 $pairs[] = "$k = $v";
             } else {
                 $pairs[] = "`{$k}` = ?";
             }
             $values[] = $v;
         }
-        $updateData['set'] = implode($pairs, ', ');
+        $updateData['set'] = implode(', ', $pairs);
         $updateData['values'] = $values;
 
         return $updateData;
