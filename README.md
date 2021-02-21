@@ -1,7 +1,9 @@
 # PdoModel
 <b>Helper methods for MySql by PDO </b>
 
+php >= 7.2.5
 ```shell
+ 
 composer require phpset/pdomodel
 ```
 
