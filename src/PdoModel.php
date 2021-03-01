@@ -210,11 +210,15 @@ class PdoModel extends PdoHandler
         $sql = 'INSERT ' . $ignoreSql . "INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
         $sth = $this->prepare($sql);
 
-        $this->execute($sth, $insertData['values']);
+        $sthRes = $this->execute($sth, $insertData['values']);
+        if ($sthRes === false) {
+            throw new \Exception($sth->errorInfo()[2]);
+        }
         $result = $this->getLastInsertId();
 
-        $record = $this->find($result);
-        $this->changeListener($record['id'], $record);
+        if ($record = $this->find($result)) {
+            $this->changeListener($record['id'], $record);
+        }
         $this->log(self::INSERT, $sql, $insertData['values'], $timeStart);
 
         return (int)$result;
