@@ -104,6 +104,7 @@ class PdoModel extends PdoHandler
 
     public function find(int $id)
     {
+        $this->checkId($id);
         $timeStart = microtime(true);
         $sql = "SELECT * FROM {$this->getTable()} WHERE id = ? LIMIT 1";
         $sth = $this->prepare($sql);
@@ -112,6 +113,12 @@ class PdoModel extends PdoHandler
         $this->log(self::SELECT, $sql, $id, $timeStart);
 
         return $sth->fetch(\PDO::FETCH_ASSOC);
+    }
+
+    private function checkId(int $id) {
+        if ($id === 1) {
+            trigger_error("Possible wrong conversion of ID param to int", E_USER_WARNING);
+        }
     }
 
     /**
@@ -215,6 +222,7 @@ class PdoModel extends PdoHandler
             throw new \Exception($sth->errorInfo()[2]);
         }
         $result = $this->getLastInsertId();
+        $this->checkId($result);
 
         if ($record = $this->find($result)) {
             $this->changeListener($record['id'], $record);
@@ -233,6 +241,7 @@ class PdoModel extends PdoHandler
 
         $this->execute($sth, $insertData['values']);
         $result = $this->getLastInsertId();
+        $this->checkId($result);
 
         $record = $this->find($result);
         $this->changeListener($record['id'], $record);
@@ -395,6 +404,7 @@ class PdoModel extends PdoHandler
      */
     public function increment(int $id, $column, $amount = 1)
     {
+        $this->checkId($id);
         $record = $this->find($id);
 
         $timeStart = microtime(true);
@@ -417,6 +427,7 @@ class PdoModel extends PdoHandler
      */
     public function update(int $id, array $data)
     {
+        $this->checkId($id);
         if (empty($data)) {
             return false;
         }
@@ -477,6 +488,7 @@ class PdoModel extends PdoHandler
      */
     public function delete(int $id)
     {
+        $this->checkId($id);
         $record = $this->find($id);
 
         $timeStart = microtime(true);
