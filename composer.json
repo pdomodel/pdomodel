@@ -3,7 +3,6 @@
   "description": "Simple PDO-based Model",
   "require": {
     "php": ">=7.2.5",
-    "ext-mysql": "*",
     "ext-json": "*",
     "ext-pdo": "*"
   },
