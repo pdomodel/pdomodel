@@ -585,7 +585,7 @@ class PdoModel extends PdoHandler
                 }
             }
         }
-        $criteria['where'] = implode($pairs, ' AND ');
+        $criteria['where'] = implode(' AND ', $pairs);
         $criteria['values'] = $values;
 
         return $criteria;
@@ -605,7 +605,7 @@ class PdoModel extends PdoHandler
             }
             $values[] = $v;
         }
-        $updateData['set'] = implode($pairs, ', ');
+        $updateData['set'] = implode(', ', $pairs);
         $updateData['values'] = $values;
 
         return $updateData;
