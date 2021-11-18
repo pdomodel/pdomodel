@@ -104,21 +104,14 @@ class PdoModel extends PdoHandler
 
     public function find(int $id)
     {
-        $this->checkId($id);
         $timeStart = microtime(true);
-        $sql = "SELECT * FROM {$this->getTable()} WHERE id = ? LIMIT 1";
+        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()}= ? LIMIT 1";
         $sth = $this->prepare($sql);
         $this->execute($sth, [$id]);
 
         $this->log(self::SELECT, $sql, $id, $timeStart);
 
         return $sth->fetch(\PDO::FETCH_ASSOC);
-    }
-
-    private function checkId(int $id) {
-        if ($id === 1) {
-            trigger_error("Possible wrong conversion of ID param to int", E_USER_WARNING);
-        }
     }
 
     /**
@@ -140,13 +133,9 @@ class PdoModel extends PdoHandler
         return (int)$result['count(*)'];
     }
 
-    /**
-     * @param string $column
-     * @return int
-     * @throws \Exception
-     */
     public function max($column = 'id', array $whereCriteria = []):int
     {
+        $column = $this->getPrimaryKey();
         $timeStart = microtime(true);
         $criteria = $this->buildWhere($whereCriteria);
 
@@ -164,12 +153,14 @@ class PdoModel extends PdoHandler
     }
 
     /**
-     * @param $column
+     * @param string $column
+     * @param array $whereCriteria
      * @return int
      * @throws \Exception
      */
-    public function min($column = 'id', array $whereCriteria = []):int
+    public function min(string $column = 'id', array $whereCriteria = []):int
     {
+        $column = $this->getPrimaryKey();
         $timeStart = microtime(true);
         $criteria = $this->buildWhere($whereCriteria);
 
@@ -222,14 +213,13 @@ class PdoModel extends PdoHandler
             throw new \Exception($sth->errorInfo()[2]);
         }
         $result = $this->getLastInsertId();
-        $this->checkId($result);
 
-        if ($record = $this->find($result)) {
-            $this->changeListener($record['id'], $record);
+        if ($result && $record = $this->find($result)) {
+            $this->changeListener($record[$this->getPrimaryKey()], $record);
         }
         $this->log(self::INSERT, $sql, $insertData['values'], $timeStart);
 
-        return (int)$result;
+        return $result;
     }
 
     public function replace(array $data):int
@@ -241,13 +231,14 @@ class PdoModel extends PdoHandler
 
         $this->execute($sth, $insertData['values']);
         $result = $this->getLastInsertId();
-        $this->checkId($result);
 
-        $record = $this->find($result);
-        $this->changeListener($record['id'], $record);
+        if ($result) {
+            $record = $this->find($result);
+            $this->changeListener($record[$this->getPrimaryKey()], $record);
+        }
         $this->log(self::INSERT, $sql, $insertData['values'], $timeStart);
 
-        return (int)$result;
+        return $result;
     }
 
     /**
@@ -299,8 +290,10 @@ class PdoModel extends PdoHandler
             $res = $this->execute($sth, $valuesPart);
 
             $id = $this->getLastInsertId();
-            $record = $this->find($id);
-            $this->changeListener($id, $record);
+            if ($id) {
+                $record = $this->find($id);
+                $this->changeListener($id, $record);
+            }
         }
         return $res;
     }
@@ -389,8 +382,10 @@ class PdoModel extends PdoHandler
             $res = $this->execute($sth, $valuesPart);
 
             $id = $this->getLastInsertId();
-            $record = $this->find($id);
-            $this->changeListener($id, $record);
+            if ($id) {
+                $record = $this->find($id);
+                $this->changeListener($id, $record);
+            }
         }
         return $res;
     }
@@ -404,7 +399,6 @@ class PdoModel extends PdoHandler
      */
     public function increment(int $id, $column, $amount = 1)
     {
-        $this->checkId($id);
         $record = $this->find($id);
 
         $timeStart = microtime(true);
@@ -427,7 +421,6 @@ class PdoModel extends PdoHandler
      */
     public function update(int $id, array $data)
     {
-        $this->checkId($id);
         if (empty($data)) {
             return false;
         }
@@ -474,7 +467,7 @@ class PdoModel extends PdoHandler
 
         if ($records) {
             foreach ($records as $record) {
-                $this->changeListener($record['id'], $record);
+                $this->changeListener($record[$this->getPrimaryKey()], $record);
             }
         }
         $this->log(self::UPDATE, $sql, $values, $timeStart);
@@ -488,7 +481,6 @@ class PdoModel extends PdoHandler
      */
     public function delete(int $id)
     {
-        $this->checkId($id);
         $record = $this->find($id);
 
         $timeStart = microtime(true);
@@ -525,7 +517,7 @@ class PdoModel extends PdoHandler
 
         if ($records) {
             foreach ($records as $record) {
-                $this->changeListener($record['id'], $record);
+                $this->changeListener($record[$this->getPrimaryKey()], $record);
             }
         }
         $this->log(self::DELETE, $sql, $criteria['values'], $timeStart);
