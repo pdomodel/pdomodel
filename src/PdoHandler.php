@@ -30,7 +30,6 @@ class PdoHandler
         return $this->primaryKey;
     }
 
-
     public function getTable()
     {
         if (!$this->table) {
@@ -52,10 +51,13 @@ class PdoHandler
     }
 
     /**
-     * @return int
+     * @param null $sequenceName
+     * @return int|null
      */
-    public function getLastInsertId($sequenceName = null): int
+    public function getLastInsertId($sequenceName = null): ?int
     {
-        return (int)$this->connection->lastInsertId($sequenceName);
+        $lastId = $this->connection->lastInsertId($sequenceName);
+
+        return is_numeric($lastId) ? (int)$lastId : null;
     }
 }
