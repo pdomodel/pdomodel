@@ -52,12 +52,10 @@ class PdoHandler
 
     /**
      * @param null $sequenceName
-     * @return int|null
+     * @return string|false
      */
-    public function getLastInsertId($sequenceName = null): ?int
+    public function getLastInsertId($sequenceName = null)
     {
-        $lastId = $this->connection->lastInsertId($sequenceName);
-
-        return is_numeric($lastId) ? (int)$lastId : null;
+        return $this->connection->lastInsertId($sequenceName);
     }
 }
