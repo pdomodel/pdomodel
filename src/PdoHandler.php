@@ -5,6 +5,7 @@ namespace PdoModel;
 class PdoHandler
 {
     private $table;
+    private $primaryKey = 'id';
     private $connection;
 
     public function __construct(\PDO $connection)
@@ -16,6 +17,17 @@ class PdoHandler
     {
         $this->table = $tableName;
         return $this;
+    }
+
+    public function setPrimaryKey($key)
+    {
+        $this->primaryKey = $key;
+        return $this;
+    }
+
+    public function getPrimaryKey()
+    {
+        return $this->primaryKey;
     }
 
     public function getTable()
@@ -39,10 +51,11 @@ class PdoHandler
     }
 
     /**
-     * @return int
+     * @param null $sequenceName
+     * @return string|false
      */
-    public function getLastInsertId($sequenceName = null): int
+    public function getLastInsertId($sequenceName = null)
     {
-        return (int)$this->connection->lastInsertId($sequenceName);
+        return $this->connection->lastInsertId($sequenceName);
     }
 }
