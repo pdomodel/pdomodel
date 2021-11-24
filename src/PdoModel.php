@@ -39,15 +39,22 @@ class PdoModel extends PdoHandler
 
     /**
      * @param array $whereCriteria
-     * @param string $order (example: 'id DESC')
-     * @param bool $limit
-     * @param bool $offset
-     * @param bool|string $groupBy
+     * @param string|null $order
+     * @param int|null $limit
+     * @param int|null $offset
+     * @param string|null $groupBy
      * @param array $columns
      * @return PdoResult
      * @throws \Exception
      */
-    public function select(array $whereCriteria, string $order = null, int $limit = null, int $offset = null, string $groupBy = null, array $columns = [])
+    public function select(
+        array $whereCriteria,
+        ?string $order = null,
+        ?int $limit = null,
+        ?int $offset = null,
+        ?string $groupBy = null,
+        array $columns = []
+    )
     {
         $criteria = $this->buildWhere($whereCriteria);
         $timeStart = microtime(true);
@@ -105,7 +112,7 @@ class PdoModel extends PdoHandler
     public function find(int $id)
     {
         $timeStart = microtime(true);
-        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()}= ? LIMIT 1";
+        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ? LIMIT 1";
         $sth = $this->prepare($sql);
         $this->execute($sth, [$id]);
 
@@ -133,7 +140,7 @@ class PdoModel extends PdoHandler
         return (int)$result['count(*)'];
     }
 
-    public function max($column = 'id', array $whereCriteria = []):int
+    public function max($column = 'id', array $whereCriteria = []): int
     {
         $column = $this->getPrimaryKey();
         $timeStart = microtime(true);
@@ -158,7 +165,7 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function min(string $column = 'id', array $whereCriteria = []):int
+    public function min(string $column = 'id', array $whereCriteria = []): ?int
     {
         $column = $this->getPrimaryKey();
         $timeStart = microtime(true);
@@ -182,7 +189,7 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function sum($column):int
+    public function sum($column): int
     {
         $timeStart = microtime(true);
         $sql = "SELECT SUM({$column}) FROM {$this->getTable()}";
@@ -197,7 +204,7 @@ class PdoModel extends PdoHandler
 
     // ------------------------------- Write methods ------------------------------------
 
-    public function insert(array $data, bool $ignore = false):int
+    public function insert(array $data, bool $ignore = false): int
     {
         $timeStart = microtime(true);
         $ignoreSql = '';
@@ -222,7 +229,7 @@ class PdoModel extends PdoHandler
         return $result;
     }
 
-    public function replace(array $data):int
+    public function replace(array $data): int
     {
         $timeStart = microtime(true);
         $insertData = $this->prepareInsertData($data);
@@ -500,7 +507,7 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function deleteWhere(array $whereCriteria):int
+    public function deleteWhere(array $whereCriteria): int
     {
         if (empty($whereCriteria)) {
             return false;
@@ -637,7 +644,7 @@ class PdoModel extends PdoHandler
         }
     }
 
-    private function execute(\PDOStatement $sth, array $data = null)
+    private function execute(\PDOStatement $sth, ?array $data = null)
     {
         foreach ($data as $item) {
             if (is_array($item)) {
