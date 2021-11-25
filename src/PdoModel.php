@@ -39,15 +39,22 @@ class PdoModel extends PdoHandler
 
     /**
      * @param array $whereCriteria
-     * @param string $order (example: 'id DESC')
-     * @param bool $limit
-     * @param bool $offset
-     * @param bool|string $groupBy
+     * @param string|null $order
+     * @param int|null $limit
+     * @param int|null $offset
+     * @param string|null $groupBy
      * @param array $columns
      * @return PdoResult
      * @throws \Exception
      */
-    public function select(array $whereCriteria, string $order = null, int $limit = null, int $offset = null, string $groupBy = null, array $columns = [])
+    public function select(
+        array $whereCriteria,
+        ?string $order = null,
+        ?int $limit = null,
+        ?int $offset = null,
+        ?string $groupBy = null,
+        array $columns = []
+    )
     {
         $criteria = $this->buildWhere($whereCriteria);
         $timeStart = microtime(true);
@@ -105,7 +112,7 @@ class PdoModel extends PdoHandler
     public function find(int $id)
     {
         $timeStart = microtime(true);
-        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()}= ? LIMIT 1";
+        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ? LIMIT 1";
         $sth = $this->prepare($sql);
         $this->execute($sth, [$id]);
 
@@ -637,7 +644,7 @@ class PdoModel extends PdoHandler
         }
     }
 
-    private function execute(\PDOStatement $sth, array $data = null)
+    private function execute(\PDOStatement $sth, ?array $data = null)
     {
         foreach ($data as $item) {
             if (is_array($item)) {
