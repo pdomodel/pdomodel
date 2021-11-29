@@ -644,7 +644,7 @@ class PdoModel extends PdoHandler
         }
     }
 
-    private function execute(\PDOStatement $sth, ?array $data = null)
+    private function execute(\PDOStatement $sth, array $data = [])
     {
         foreach ($data as $item) {
             if (is_array($item)) {
