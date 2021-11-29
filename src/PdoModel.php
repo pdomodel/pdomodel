@@ -102,7 +102,7 @@ class PdoModel extends PdoHandler
     {
         $timeStart = microtime(true);
         $sth = $this->prepare($query);
-        $this->execute($sth, $params);
+        $this->execute($sth, $params ?? []);
 
         $this->log(self::SELECT, $query, $params, $timeStart);
 
@@ -133,7 +133,7 @@ class PdoModel extends PdoHandler
         $sql = "SELECT count(*) FROM `{$this->getTable()}` WHERE " . $criteria['where'];
         $sth = $this->prepare($sql);
 
-        $this->execute($sth, $criteria['values']);
+        $this->execute($sth, $criteria['values'] ?? []);
         $result = $sth->fetch(\PDO::FETCH_ASSOC);
         $this->log(self::SELECT, $sql, $criteria['values'], $timeStart);
 
@@ -152,7 +152,7 @@ class PdoModel extends PdoHandler
         }
 
         $sth = $this->prepare($sql);
-        $this->execute($sth, $criteria['values']);
+        $this->execute($sth, $criteria['values'] ?? []);
         $result = $sth->fetch();
 
         $this->log(self::SELECT, $sql, [], $timeStart);
@@ -177,7 +177,7 @@ class PdoModel extends PdoHandler
         }
 
         $sth = $this->prepare($sql);
-        $this->execute($sth, $criteria['values']);
+        $this->execute($sth, $criteria['values'] ?? []);
         $result = $sth->fetch();
 
         $this->log(self::SELECT, $sql, [], $timeStart);
@@ -215,7 +215,7 @@ class PdoModel extends PdoHandler
         $sql = 'INSERT ' . $ignoreSql . "INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
         $sth = $this->prepare($sql);
 
-        $sthRes = $this->execute($sth, $insertData['values']);
+        $sthRes = $this->execute($sth, $insertData['values'] ?? []);
         if ($sthRes === false) {
             throw new \Exception($sth->errorInfo()[2]);
         }
@@ -236,7 +236,7 @@ class PdoModel extends PdoHandler
         $sql = "REPLACE INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
         $sth = $this->prepare($sql);
 
-        $this->execute($sth, $insertData['values']);
+        $this->execute($sth, $insertData['values'] ?? []);
         $result = $this->getLastInsertId();
 
         if ($result) {
@@ -294,7 +294,7 @@ class PdoModel extends PdoHandler
             $valuesSqlPart = implode(',', $valuesSqlPart);
             $sql = 'INSERT ' . $ignoreSql . "INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart}";
             $sth = $this->prepare($sql);
-            $res = $this->execute($sth, $valuesPart);
+            $res = $this->execute($sth, $valuesPart ?? []);
 
             $id = $this->getLastInsertId();
             if ($id) {
@@ -321,7 +321,7 @@ class PdoModel extends PdoHandler
         if ($raw) {
             $result = $this->execute($sth);
         } else {
-            $result = $this->execute($sth, $values);
+            $result = $this->execute($sth, $values ?? []);
         }
 
         $this->log(self::INSERT_UPDATE, $sql, $values, $timeStart);
@@ -386,7 +386,7 @@ class PdoModel extends PdoHandler
             $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateKeys}";
 
             $sth = $this->prepare($sql);
-            $res = $this->execute($sth, $valuesPart);
+            $res = $this->execute($sth, $valuesPart ?? []);
 
             $id = $this->getLastInsertId();
             if ($id) {
@@ -440,7 +440,7 @@ class PdoModel extends PdoHandler
 
         $sql = "UPDATE `{$this->getTable()}` SET " . $updateData['set'] . " WHERE id = ?";
         $sth = $this->prepare($sql);
-        $result = $this->execute($sth, $values);
+        $result = $this->execute($sth, $values ?? []);
 
         if ($record) {
             $this->changeListener($id, $record);
@@ -470,7 +470,7 @@ class PdoModel extends PdoHandler
 
         $sql = "UPDATE `{$this->getTable()}` SET " . $updateData['set'] . " WHERE " . $criteria['where'];
         $sth = $this->prepare($sql);
-        $result = $this->execute($sth, $values);
+        $result = $this->execute($sth, $values ?? []);
 
         if ($records) {
             foreach ($records as $record) {
@@ -519,7 +519,7 @@ class PdoModel extends PdoHandler
         $timeStart = microtime(true);
         $sql = "DELETE FROM {$this->getTable()} WHERE " . $criteria['where'];
         $sth = $this->prepare($sql);
-        $this->execute($sth, $criteria['values']);
+        $this->execute($sth, $criteria['values'] ?? []);
         $result = (int)$sth->rowCount();
 
         if ($records) {
