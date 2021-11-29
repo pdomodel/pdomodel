@@ -86,7 +86,7 @@ class PdoModel extends PdoHandler
         }
 
         $sth = $this->prepare($sql);
-        $this->execute($sth, $criteria['values']);
+        $this->execute($sth, $criteria['values'] ?? []);
 
         $this->log(self::SELECT, $sql, $criteria['values'], $timeStart);
 
