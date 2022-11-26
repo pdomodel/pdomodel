@@ -25,7 +25,7 @@ class PdoFactory
             PDO::ATTR_CASE => PDO::CASE_LOWER,
         ];
 
-        $options = array_merge($defaultOptions, $options);
+        $options = array_replace($defaultOptions, $options);
 
         $connectionString = implode(';', [
             $driver . ':host=' . $host,
