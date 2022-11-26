@@ -1,86 +1,48 @@
 # PdoModel
-<b>Helper methods for MySql by PDO </b>
+<b>Helper methods for MySql using PDO - fast alternative for Doctrine and etc</b>
 
-php >= 7.2.5
 ```shell
- 
 composer require phpset/pdomodel
 ```
 
+## Creating PDO connection
 ```php
-$connection = \PdoModel\PdoFactory::createConnection([
-    'host' => '127.0.0.1',
-    'password' => 'somepass',
-    'username' => 'user',
-    'database' => 'dbname',
-    'port' => '25060',
-    'options' => [
-        PDO::ATTR_TIMEOUT => 1,
-    ],
-]);
-
+$connection = \PdoModel\PdoFactory::createConnection('127.0.0.1', 'dbname', 'username', 'password');
+// Or you can use any other PDO connection
+$connection = new PDO();
+```
+And next pass this connection when creating model
+```php
 $db = new \PdoModel\PdoModel($connection);
-$db->setTable('records');
-$db->insert(['id'=>1, 'name'=>'first record']);
-
+```
+For Symfony just add PDO to DI in service config
+```yaml
+PDO:
+  class: \PDO
+  factory: ['PdoModel\PdoFactory', 'createConnection']
+  arguments: ['127.0.0.1', 'dbname', 'username', 'password']
 ```
 
+## Your Model file example
+```php
+use PdoModel\PdoModel;
 
+class YoutubeVideosModel extends PdoModel
+{
+    protected $table = 'youtube_videos';
 
-## Selecting
-
-### select
-(array $whereCriteria, $order = '', $limit = false, $offset = false, $columns = [])
-
-### selectRaw
-($query, $params = [])
-
-### find
-(id)
-...
-### count
-(array $whereCriteria)
-
-### max
-($column = 'id')
-
-### min
-($column)
-
-### sum
-($column)
-
-## Inserting
-### insert
-(array $data)
-
-### insertBatch(array $arraysOfData)
-(array $arraysOfData)
-
-### insertUpdate
-(array $insert, array $update)
-
-## Updating
-### update
-($id, array $data)
-
-### updateWhere
-(array $whereCriteria, array $data)
-
-### increment
-($id, $column, $amount = 1)
-
-## Deleting
-### delete
-($id)
-
-### deleteWhere
-(array $whereCriteria)
-
-## Extra
-### log
-($statement, $sql, $params, $timeStart)
-
-### setChangeListener
-($callback)
-
+    public function create(string $id, string $title, string $description, $createdAt): string
+    {
+        if ($this->find($id)) {
+            return $id;
+        }
+        $this->insert([
+            'id' => $id,
+            'title' => $title,
+            'description' => $description,
+            'created_at' => $createdAt,
+        ]);
+        return $id;
+    }
+}
+```
