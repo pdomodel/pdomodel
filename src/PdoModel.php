@@ -109,7 +109,7 @@ class PdoModel extends PdoHandler
         return new PdoResult($sth);
     }
 
-    public function find(int $id)
+    public function find($id)
     {
         $timeStart = microtime(true);
         $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ? LIMIT 1";
