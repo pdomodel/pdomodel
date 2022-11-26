@@ -4,7 +4,7 @@ namespace PdoModel;
 
 class PdoHandler
 {
-    private $table;
+    protected $table;
     private $primaryKey = 'id';
     private $connection;
 
