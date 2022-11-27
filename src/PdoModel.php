@@ -404,7 +404,7 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function increment(int $id, $column, $amount = 1)
+    public function increment($id, $column, $amount = 1)
     {
         $record = $this->find($id);
 
@@ -426,7 +426,7 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function update(int $id, array $data)
+    public function update($id, array $data)
     {
         if (empty($data)) {
             return false;
@@ -486,7 +486,7 @@ class PdoModel extends PdoHandler
      * @return bool
      * @throws \Exception
      */
-    public function delete(int $id)
+    public function delete($id)
     {
         $record = $this->find($id);
 
