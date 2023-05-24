@@ -48,12 +48,12 @@ class PdoModel extends PdoHandler
      * @throws \Exception
      */
     public function select(
-        array $whereCriteria,
+        array   $whereCriteria,
         ?string $order = null,
-        ?int $limit = null,
-        ?int $offset = null,
+        ?int    $limit = null,
+        ?int    $offset = null,
         ?string $groupBy = null,
-        array $columns = []
+        array   $columns = []
     )
     {
         $criteria = $this->buildWhere($whereCriteria);
@@ -126,7 +126,7 @@ class PdoModel extends PdoHandler
      * @return int
      * @throws \Exception
      */
-    public function count(array $whereCriteria):int
+    public function count(array $whereCriteria): int
     {
         $timeStart = microtime(true);
         $criteria = $this->buildWhere($whereCriteria);
@@ -328,41 +328,30 @@ class PdoModel extends PdoHandler
         return $result;
     }
 
-    /**
-     * @param array $insert
-     * @param array $updateKeys
-     * @return bool
-     * @throws \Exception
-     */
-    public function insertUpdateBatch(array $insert, array $updateKeys)
+    public function insertUpdateBatch(array $insertRows, array $updateColumns = [], array $incrementColumns = [])
     {
-
-        $insertKeys = array_keys($insert[0]);
+        $insertKeys = array_keys($insertRows[0]);
 
         $insertValues = [];
-        foreach ($insert as $data) {
-            foreach ($data as $key => $value) {
+        foreach ($insertRows as $row) {
+            foreach ($row as $key => $value) {
                 $insertValues[] = $value;
             }
         }
-
-        $updateKeysRaw = [];
-        foreach ($updateKeys as $data) {
-            $updateKeysRaw[] = "{$data} = VALUES({$data})";
+        $updateSql = [];
+        foreach ($updateColumns as $column) {
+            $updateSql[] = "`{$column}` = `VALUES(`{$column}`)";
         }
+        foreach ($incrementColumns as $column) {
+            $updateSql[] = "`{$column}` = `{$column}` + VALUES(`{$column}`)";
+        }
+        $updateSql = join(',', $updateSql);
 
-        $res = $this->insertUpdateBatchRaw($insertKeys, $insertValues, $updateKeysRaw);
+        $res = $this->insertUpdateBatchRaw($insertKeys, $insertValues, $updateSql);
         return $res;
     }
 
-    /**
-     * @param array $insertKeys
-     * @param array $insertValues
-     * @param array $updateKeys
-     * @return bool
-     * @throws \Exception
-     */
-    private function insertUpdateBatchRaw(array $insertKeys, array $insertValues, array $updateKeys)
+    private function insertUpdateBatchRaw(array $insertKeys, array $insertValues, string $updateSql)
     {
         // Hard but fast
         $keysCount = count($insertKeys);
@@ -376,14 +365,13 @@ class PdoModel extends PdoHandler
         $keys = implode(',', $insertKeys);
         $table = $this->getTable();
         $valuesOffset = 0;
-        $updateKeys = implode(',', $updateKeys);
 
         $res = false;
         foreach (array_chunk($valuesSql, $valuesSqlChunkSize) as $valuesSqlPart) {
             $valuesPart = array_slice($insertValues, $valuesOffset * $valuesSqlChunkSize * $keysCount, $valuesChunkSize);
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
-            $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateKeys}";
+            $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateSql}";
 
             $sth = $this->prepare($sql);
             $res = $this->execute($sth, $valuesPart ?? []);
