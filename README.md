@@ -40,3 +40,8 @@ PDO:
   factory: ['PdoModel\PdoFactory', 'createConnection']
   arguments: ['127.0.0.1', 'dbname', 'username', 'password']
 ```
+
+### Tests
+```shell
+./vendor/bin/phpunit tests
+```
