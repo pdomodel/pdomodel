@@ -2,6 +2,8 @@
 
 namespace PdoModel;
 
+use PdoModel\Builder\CreateTableBuilder;
+
 class PdoModel
 {
     protected $table;
@@ -656,6 +658,11 @@ class PdoModel
     public function getLastInsertId($sequenceName = null)
     {
         return $this->connection->lastInsertId($sequenceName);
+    }
+
+    public function createTable(string $name): CreateTableBuilder
+    {
+        return new CreateTableBuilder($name, $this->connection);
     }
 
     public function prepare($query, $options = [])
