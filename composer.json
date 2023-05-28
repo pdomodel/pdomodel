@@ -1,5 +1,5 @@
 {
-  "name": "phpset/pdomodel",
+  "name": "pdomodel/pdomodel",
   "description": "Simple PDO-based Model",
   "require": {
     "php": ">=8.1",
