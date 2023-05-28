@@ -2,8 +2,43 @@
 
 namespace PdoModel;
 
-class PdoModel extends PdoHandler
+class PdoModel
 {
+    protected $table;
+    protected $primaryKey = 'id';
+    private $connection;
+
+    public function __construct(\PDO $connection)
+    {
+        $this->connection = $connection;
+    }
+
+    public function setTable($tableName)
+    {
+        $this->table = $tableName;
+        return $this;
+    }
+
+    public function setPrimaryKey($key)
+    {
+        $this->primaryKey = $key;
+        return $this;
+    }
+
+    public function getPrimaryKey()
+    {
+        return $this->primaryKey;
+    }
+
+    public function getTable()
+    {
+        if (!$this->table) {
+            throw new \Exception("Database table name can't be empty");
+        }
+
+        return $this->table;
+    }
+
     const INSERT = 'INSERT';
     const UPDATE = 'UPDATE';
     const SELECT = 'SELECT';
@@ -630,6 +665,22 @@ class PdoModel extends PdoHandler
         if (is_callable($this->changeListenerCallback)) {
             call_user_func_array($this->changeListenerCallback, [&$id, &$data]);
         }
+    }
+
+    public function getLastInsertId($sequenceName = null)
+    {
+        return $this->connection->lastInsertId($sequenceName);
+    }
+
+    public function prepare($query, $options = [])
+    {
+        try {
+            $result = $this->connection->prepare($query, $options);
+        } catch (\PDOException $e) {
+            error_log('Mysql prepare error, ' . 'message: ' . $e->getMessage() . ', table: ' . static::getTable());
+            throw $e;
+        }
+        return $result;
     }
 
     private function execute(\PDOStatement $sth, array $data = [])
