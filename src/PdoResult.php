@@ -12,11 +12,21 @@ class PdoResult
     /**
      * @var PDOStatement
      */
-    protected $statement;
+    protected PDOStatement $statement;
+    private ?array $preparedParameterValues;
 
-    public function __construct(PDOStatement $statement)
+    public function __construct(PDOStatement $statement, ?array $preparedParameterValues = null)
     {
         $this->statement = $statement;
+        $this->preparedParameterValues = $preparedParameterValues;
+    }
+
+    public function getSqlAndParams(): array
+    {
+        return [
+            'sql' => $this->statement->queryString,
+            'params' => $this->preparedParameterValues,
+        ];
     }
 
     /**

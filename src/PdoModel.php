@@ -119,29 +119,15 @@ class PdoModel
         } elseif (!$offset && $limit) {
             $sql .= " LIMIT " . (int)$limit;
         }
-
-        $sth = $this->prepare($sql);
-        $this->execute($sth, $criteria['values'] ?? []);
-
         $this->log(self::SELECT, $sql, $criteria['values'], $timeStart);
-
-        return new PdoResult($sth);
+        return $this->selectRaw($sql, $criteria['values']);
     }
 
-    /**
-     * @param $query
-     * @param array $params
-     * @return PdoResult
-     */
-    public function selectRaw($query, $params = [])
+    public function selectRaw($query, $preparedParameterValues = [])
     {
-        $timeStart = microtime(true);
         $sth = $this->prepare($query);
-        $this->execute($sth, $params ?? []);
-
-        $this->log(self::SELECT, $query, $params, $timeStart);
-
-        return new PdoResult($sth);
+        $this->execute($sth, $preparedParameterValues);
+        return new PdoResult($sth, $preparedParameterValues);
     }
 
     public function find($id)
