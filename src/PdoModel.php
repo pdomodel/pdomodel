@@ -6,9 +6,9 @@ use PdoModel\Builder\CreateTableBuilder;
 
 class PdoModel
 {
-    protected $table;
-    protected $primaryKey = 'id';
-    protected $connection;
+    protected string $table;
+    protected string $primaryKey = 'id';
+    protected \PDO $connection;
 
     public function __construct(\PDO $connection)
     {
@@ -35,7 +35,7 @@ class PdoModel
     public function getTable()
     {
         if (!$this->table) {
-            throw new \Exception("Database table name can't be empty");
+            throw new PdoModelException("Database table name can't be empty");
         }
 
         return $this->table;
@@ -72,16 +72,6 @@ class PdoModel
 
     protected $changeListenerCallback;
 
-    /**
-     * @param array $whereCriteria
-     * @param string|null $order
-     * @param int|null $limit
-     * @param int|null $offset
-     * @param string|null $groupBy
-     * @param array $columns
-     * @return PdoResult
-     * @throws \Exception
-     */
     public function select(
         array   $whereCriteria,
         ?string $order = null,
@@ -142,11 +132,6 @@ class PdoModel
         return $sth->fetch(\PDO::FETCH_ASSOC);
     }
 
-    /**
-     * @param array $whereCriteria
-     * @return int
-     * @throws \Exception
-     */
     public function count(array $whereCriteria): int
     {
         $timeStart = microtime(true);
@@ -180,12 +165,6 @@ class PdoModel
         return (int)reset($result);
     }
 
-    /**
-     * @param string $column
-     * @param array $whereCriteria
-     * @return int
-     * @throws \Exception
-     */
     public function min(string $column = 'id', array $whereCriteria = []): ?int
     {
         $column = $this->getPrimaryKey();
@@ -205,11 +184,6 @@ class PdoModel
         return (int)reset($result);
     }
 
-    /**
-     * @param $column
-     * @return int
-     * @throws \Exception
-     */
     public function sum($column): int
     {
         $timeStart = microtime(true);
@@ -236,7 +210,7 @@ class PdoModel
 
         $sthRes = $this->execute($sth, $insertData['values'] ?? []);
         if ($sthRes === false) {
-            throw new \Exception($sth->errorInfo()[2]);
+            throw new PdoModelException($sth->errorInfo()[2]);
         }
         $result = $this->getLastInsertId();
 
@@ -267,11 +241,6 @@ class PdoModel
         return $result;
     }
 
-    /**
-     * @param array $arraysOfData
-     * @param bool $ignore
-     * @return bool
-     */
     public function insertBatch(array $arraysOfData, bool $ignore = false)
     {
         $keys = array_keys($arraysOfData[0]);
@@ -404,13 +373,6 @@ class PdoModel
         return $res;
     }
 
-    /**
-     * @param $id
-     * @param $column
-     * @param int $amount
-     * @return bool
-     * @throws \Exception
-     */
     public function increment($id, $column, $amount = 1)
     {
         $record = $this->find($id);
@@ -427,12 +389,6 @@ class PdoModel
         return $res;
     }
 
-    /**
-     * @param $id
-     * @param array $data
-     * @return bool
-     * @throws \Exception
-     */
     public function update($id, array $data)
     {
         if (empty($data)) {
@@ -456,12 +412,6 @@ class PdoModel
         return $result;
     }
 
-    /**
-     * @param array $whereCriteria
-     * @param array $data
-     * @return bool
-     * @throws \Exception
-     */
     public function updateWhere(array $whereCriteria, array $data)
     {
         if (empty($data) || empty($whereCriteria)) {
@@ -488,11 +438,6 @@ class PdoModel
         return $result;
     }
 
-    /**
-     * @param $id
-     * @return bool
-     * @throws \Exception
-     */
     public function delete($id)
     {
         $record = $this->find($id);
@@ -509,11 +454,6 @@ class PdoModel
         return $result;
     }
 
-    /**
-     * @param array $whereCriteria
-     * @return bool
-     * @throws \Exception
-     */
     public function deleteWhere(array $whereCriteria): int
     {
         if (empty($whereCriteria)) {
@@ -559,12 +499,12 @@ class PdoModel
                 $value = $v[2];
 
                 if (!in_array($operand, $this->whereOperands)) {
-                    throw new \Exception("Unsupported operand $operand in WHERE statement.");
+                    throw new PdoModelException("Unsupported operand $operand in WHERE statement.");
                 }
 
                 if ($operand == 'IN' || $operand == 'in' || $operand == 'NOT IN' || $operand == 'not in') {
                     if (!is_array($value)) {
-                        throw new \Exception("Value for $operand operand must be type of array only.");
+                        throw new PdoModelException("Value for $operand operand must be type of array only.");
                     }
                     $pairs[] = "{$key} {$operand} (" . implode(',', $value) . ")";
                     continue;
@@ -620,6 +560,10 @@ class PdoModel
         $columns = [];
 
         foreach ($data as $k => $v) {
+            if ($k === 0) {
+                throw new PdoModelException('Insert keys must be column names. Got number instead.');
+            }
+
             $columns[] = "`$k`";
             $params[] = "?";
             $values[] = $v;
@@ -660,31 +604,16 @@ class PdoModel
 
     public function prepare($query, $options = [])
     {
-        try {
-            $result = $this->connection->prepare($query, $options);
-        } catch (\PDOException $e) {
-            error_log('Mysql prepare error, ' . 'message: ' . $e->getMessage() . ', table: ' . static::getTable());
-            throw $e;
-        }
-        return $result;
+        return $this->connection->prepare($query, $options);
     }
 
     protected function execute(\PDOStatement $sth, array $data = [])
     {
         foreach ($data as $item) {
             if (is_array($item)) {
-                throw new \PDOException('Array ' . json_encode($item) . ' cant be statement value');
+                throw new PdoModelException('Array ' . json_encode($item) . ' cant be statement value');
             }
         }
-
-        try {
-            $res = $sth->execute($data);
-        } catch (\PDOException $e) {
-            if ($e->getCode() != 23000) {
-                error_log('Mysql execute error, data: ' . json_encode($data) . ' message: ' . $e->getMessage() . ', table: ' . static::getTable());
-            }
-            throw $e;
-        }
-        return $res;
+        return $sth->execute($data);
     }
 }
