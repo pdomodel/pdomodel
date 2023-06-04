@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 
 class SelectTest extends TestCase
 {
+    /**
+     * @covers \PdoModel\PdoModel::select
+     */
     public function testSelect(): void
     {
         $insertData = [

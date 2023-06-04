@@ -5,6 +5,9 @@ use PHPUnit\Framework\TestCase;
 
 class InsertTest extends TestCase
 {
+    /**
+     * @covers \PdoModel\PdoModel::insert
+     */
     public function testInsert(): void
     {
         $targetData = ['id' => 1, 'foo' => 'bar'];

@@ -42,6 +42,11 @@ PDO:
 ```
 
 ### Tests
+Run tests
 ```shell
-./vendor/bin/phpunit tests
+./vendor/bin/phpunit
+```
+Check code coverage with tests
+```shell
+php -dxdebug.mode=coverage ./vendor/bin/phpunit --coverage-text
 ```
