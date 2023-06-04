@@ -13,7 +13,7 @@ class PdoResult
      * @var PDOStatement
      */
     protected PDOStatement $statement;
-    private ?array $preparedParameterValues;
+    protected ?array $preparedParameterValues;
 
     public function __construct(PDOStatement $statement, ?array $preparedParameterValues = null)
     {

@@ -8,7 +8,7 @@ class PdoModel
 {
     protected $table;
     protected $primaryKey = 'id';
-    private $connection;
+    protected $connection;
 
     public function __construct(\PDO $connection)
     {
@@ -49,7 +49,7 @@ class PdoModel
 
     const MAX_PREPARED_STMT_COUNT = 60000;
 
-    private $whereOperands = [
+    protected $whereOperands = [
         '>',
         '<',
         '=',
@@ -70,9 +70,7 @@ class PdoModel
         'IS NOT',
     ];
 
-    private $changeListenerCallback;
-
-    // ------------------------------- Read methods ------------------------------------
+    protected $changeListenerCallback;
 
     /**
      * @param array $whereCriteria
@@ -225,8 +223,6 @@ class PdoModel
         return (int)reset($result);
     }
 
-    // ------------------------------- Write methods ------------------------------------
-
     public function insert(array $data, bool $ignore = false): int
     {
         $timeStart = microtime(true);
@@ -289,7 +285,7 @@ class PdoModel
         return $res;
     }
 
-    private function insertBatchRaw(array $keys, array $values, bool $ignore = false)
+    protected function insertBatchRaw(array $keys, array $values, bool $ignore = false)
     {
         // Hard but fast
         $keysCount = count($keys);
@@ -374,7 +370,7 @@ class PdoModel
         return $res;
     }
 
-    private function insertUpdateBatchRaw(array $insertKeys, array $insertValues, string $updateSql)
+    protected function insertUpdateBatchRaw(array $insertKeys, array $insertValues, string $updateSql)
     {
         // Hard but fast
         $keysCount = count($insertKeys);
@@ -542,10 +538,7 @@ class PdoModel
         return $result;
     }
 
-
-    // ------------------------------------- PRIVATE METHODS -------------------------------
-
-    private function buildWhere(array $whereCriteria = [])
+    protected function buildWhere(array $whereCriteria = [])
     {
         $pairs = [];
         $values = [];
@@ -599,7 +592,7 @@ class PdoModel
         return $criteria;
     }
 
-    private function prepareUpdateData(array $data, bool $raw = false)
+    protected function prepareUpdateData(array $data, bool $raw = false)
     {
         $updateData = [];
         $pairs = [];
@@ -619,7 +612,7 @@ class PdoModel
         return $updateData;
     }
 
-    private function prepareInsertData(array $data)
+    protected function prepareInsertData(array $data)
     {
         $insertData = [];
         $params = [];
@@ -648,7 +641,7 @@ class PdoModel
         $this->changeListenerCallback = $callback;
     }
 
-    private function changeListener($id, $data = [])
+    protected function changeListener($id, $data = [])
     {
         if (is_callable($this->changeListenerCallback)) {
             call_user_func_array($this->changeListenerCallback, [&$id, &$data]);
@@ -676,7 +669,7 @@ class PdoModel
         return $result;
     }
 
-    private function execute(\PDOStatement $sth, array $data = [])
+    protected function execute(\PDOStatement $sth, array $data = [])
     {
         foreach ($data as $item) {
             if (is_array($item)) {

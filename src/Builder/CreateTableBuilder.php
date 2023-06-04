@@ -8,11 +8,10 @@ use function PHPUnit\Framework\throwException;
 
 class CreateTableBuilder
 {
-    private string $tableName;
-    private array $columns;
-    private ?string $engine = null;
-
-    private ?PDO $connection = null;
+    protected string $tableName;
+    protected array $columns;
+    protected ?string $engine = null;
+    protected ?PDO $connection = null;
 
     public function __construct(string $tableName, PDO $connection = null)
     {
