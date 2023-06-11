@@ -41,14 +41,7 @@ class PdoModel
 
         return $this->table;
     }
-
-    const INSERT = 'INSERT';
-    const UPDATE = 'UPDATE';
-    const SELECT = 'SELECT';
-    const DELETE = 'DELETE';
-    const INSERT_UPDATE = 'INSERT UPDATE';
     const MAX_PREPARED_STMT_COUNT = 60000;
-    protected $changeListenerCallback;
 
     public function select(array|string $columns = '*'): SelectorBuilder
     {
@@ -57,48 +50,39 @@ class PdoModel
 
     public function find($id)
     {
-        $timeStart = microtime(true);
         $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ? LIMIT 1";
         $sth = $this->execute($sql, [$id]);
-        $this->log(self::SELECT, $sql, $id, $timeStart);
         return $sth->fetch(\PDO::FETCH_ASSOC);
     }
 
     public function max($column = 'id'): int
     {
         $column = $this->getPrimaryKey();
-        $timeStart = microtime(true);
         $sql = "SELECT MAX({$column}) FROM {$this->getTable()}";
         $sth = $this->execute($sql, $criteria['values'] ?? []);
         $result = $sth->fetch();
-        $this->log(self::SELECT, $sql, [], $timeStart);
         return (int)reset($result);
     }
 
     public function min(string $column = 'id'): ?int
     {
         $column = $this->getPrimaryKey();
-        $timeStart = microtime(true);
         $sql = "SELECT MIN({$column}) FROM {$this->getTable()}";
         $sth = $this->execute($sql, $criteria['values'] ?? []);
         $result = $sth->fetch();
-        $this->log(self::SELECT, $sql, [], $timeStart);
         return (int)reset($result);
     }
 
     public function sum($column): int
     {
-        $timeStart = microtime(true);
         $sql = "SELECT SUM({$column}) FROM {$this->getTable()}";
         $sth = $this->execute($sql);
         $result = $sth->fetch(\PDO::FETCH_ASSOC);
-        $this->log(self::SELECT, $sql, [], $timeStart);
         return (int)reset($result);
     }
 
     public function insert(array $data, bool $ignore = false): int
     {
-        $timeStart = microtime(true);
         $ignoreSql = '';
         if ($ignore) {
             $ignoreSql = 'IGNORE ';
@@ -106,28 +90,15 @@ class PdoModel
         $insertData = $this->prepareInsertData($data);
         $sql = 'INSERT ' . $ignoreSql . "INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
         $this->execute($sql, $insertData['values'] ?? []);
-        $result = $this->getLastInsertId();
-        if ($result && $record = $this->find($result)) {
-            $this->changeListener($record[$this->getPrimaryKey()], $record);
-        }
-        $this->log(self::INSERT, $sql, $insertData['values'], $timeStart);
-
-        return $result;
+        return $this->getLastInsertId();
     }
 
     public function replace(array $data): int
     {
-        $timeStart = microtime(true);
         $insertData = $this->prepareInsertData($data);
         $sql = "REPLACE INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
         $this->execute($sql, $insertData['values'] ?? []);
-        $result = $this->getLastInsertId();
-        if ($result) {
-            $record = $this->find($result);
-            $this->changeListener($record[$this->getPrimaryKey()], $record);
-        }
-        $this->log(self::INSERT, $sql, $insertData['values'], $timeStart);
-        return $result;
+        return $this->getLastInsertId();
     }
 
     public function insertBatch(array $arraysOfData, bool $ignore = false)
@@ -164,18 +135,12 @@ class PdoModel
         if ($ignore) {
             $ignoreSql = 'IGNORE ';
         }
-
         foreach (array_chunk($valuesSql, $valuesSqlChunkSize) as $valuesSqlPart) {
             $valuesPart = array_slice($values, $valuesOffset * $valuesSqlChunkSize * $keysCount, $valuesChunkSize);
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
             $sql = 'INSERT ' . $ignoreSql . "INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart}";
             $res = $this->execute($sql, $valuesPart ?? []);
-            $id = $this->getLastInsertId();
-            if ($id) {
-                $record = $this->find($id);
-                $this->changeListener($id, $record);
-            }
         }
         return $res;
     }
@@ -185,8 +150,6 @@ class PdoModel
         if (empty($insert) || empty($update)) {
             return false;
         }
-        $timeStart = microtime(true);
-
         $insertData = $this->prepareUpdateData($insert, $raw);
         $updateData = $this->prepareUpdateData($update, $raw);
         $values = array_merge($insertData['values'], $updateData['values']);
@@ -197,15 +160,12 @@ class PdoModel
         } else {
             $result = $this->execute($sql, $values ?? []);
         }
-
-        $this->log(self::INSERT_UPDATE, $sql, $values, $timeStart);
         return $result;
     }
 
     public function insertUpdateBatch(array $insertRows, array $updateColumns = [], array $incrementColumns = [])
     {
         $insertKeys = array_keys($insertRows[0]);
-
         $insertValues = [];
         foreach ($insertRows as $row) {
             foreach ($row as $key => $value) {
@@ -248,28 +208,14 @@ class PdoModel
             $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateSql}";
 
             $res = $this->execute($sql, $valuesPart ?? []);
-
-            $id = $this->getLastInsertId();
-            if ($id) {
-                $record = $this->find($id);
-                $this->changeListener($id, $record);
-            }
         }
         return $res;
     }
 
     public function increment($id, $column, $amount = 1)
     {
-        $record = $this->find($id);
-
-        $timeStart = microtime(true);
         $sql = "UPDATE {$this->getTable()} SET {$column} = {$column} + {$amount} WHERE id = ?";
-        $res = $this->execute($sql, [$id]);
-        if ($record) {
-            $this->changeListener($id, $record);
-        }
-        $this->log(self::UPDATE, $sql, [], $timeStart);
-        return $res;
+        return $this->execute($sql, [$id]);
     }
 
     public function update($id, array $data)
@@ -277,35 +223,16 @@ class PdoModel
         if (empty($data)) {
             return false;
         }
-
-        $record = $this->find($id);
-
-        $timeStart = microtime(true);
         $updateData = $this->prepareUpdateData($data);
         $values = array_merge($updateData['values'], [$id]);
-
         $sql = "UPDATE `{$this->getTable()}` SET " . $updateData['set'] . " WHERE id = ?";
-        $result = $this->execute($sql, $values ?? []);
-        if ($record) {
-            $this->changeListener($id, $record);
-        }
-        $this->log(self::UPDATE, $sql, $values, $timeStart);
-        return $result;
+        return $this->execute($sql, $values ?? []);
     }
 
     public function delete($id)
     {
-        $record = $this->find($id);
-
-        $timeStart = microtime(true);
         $sql = "DELETE FROM {$this->getTable()} WHERE id = ?";
-        $result = $this->execute($sql, [$id]);
-
-        if ($record) {
-            $this->changeListener($id, $record);
-        }
-        $this->log(self::DELETE, $sql, [$id], $timeStart);
-        return $result;
+        return $this->execute($sql, [$id]);
     }
 
     protected function prepareUpdateData(array $data, bool $raw = false)
@@ -313,7 +240,6 @@ class PdoModel
         $updateData = [];
         $pairs = [];
         $values = [];
-
         foreach ($data as $k => $v) {
             if ($raw) {
                 $pairs[] = "$k = $v";
@@ -339,7 +265,6 @@ class PdoModel
             if ($k === 0) {
                 throw new PdoModelException('Insert keys must be column names. Got number instead.');
             }
-
             $columns[] = "`$k`";
             $params[] = "?";
             $values[] = $v;
@@ -347,25 +272,7 @@ class PdoModel
         $insertData['values'] = $values;
         $insertData['columns'] = implode(', ', $columns);
         $insertData['params'] = implode(', ', $params);
-
         return $insertData;
-    }
-
-    protected function log($statement, $sql, $params, $timeStart)
-    {
-//        var_dump($statement, $sql, $params, $timeStart);
-    }
-
-    public function setChangeListener($callback)
-    {
-        $this->changeListenerCallback = $callback;
-    }
-
-    protected function changeListener($id, $data = [])
-    {
-        if (is_callable($this->changeListenerCallback)) {
-            call_user_func_array($this->changeListenerCallback, [&$id, &$data]);
-        }
     }
 
     public function getLastInsertId($sequenceName = null)
