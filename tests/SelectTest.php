@@ -31,14 +31,13 @@ class SelectTest extends TestCase
             $model->insert($row);
         }
 
-        $result = $model->select(
-            ['height' => 10],
-            'id desc',
-            3,
-            0,
-            'day',
-            ['foo', 'sum(height) as height']
-        )->all();
+        $result = $model->select(['foo', 'sum(height) as height'])
+            ->whereEqual('height', 10)
+            ->orderBy('id desc')
+            ->limit(3)
+            ->offset(0)
+            ->groupBy('day')
+            ->getAllRows();
         $this->assertEquals($targetResult, $result);
     }
 }

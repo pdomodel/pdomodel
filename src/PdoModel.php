@@ -3,6 +3,7 @@
 namespace PdoModel;
 
 use PdoModel\Builder\CreateTableBuilder;
+use PdoModel\Builder\SelectorBuilder;
 
 class PdoModel
 {
@@ -46,78 +47,12 @@ class PdoModel
     const SELECT = 'SELECT';
     const DELETE = 'DELETE';
     const INSERT_UPDATE = 'INSERT UPDATE';
-
     const MAX_PREPARED_STMT_COUNT = 60000;
-
-    protected $whereOperands = [
-        '>',
-        '<',
-        '=',
-        '!=',
-        '>=',
-        '<=',
-        'IN',
-        'in',
-        'NOT IN',
-        'not in',
-        'LIKE',
-        'like',
-        'NOT LIKE',
-        'not like',
-        'IS',
-        'is',
-        'is not',
-        'IS NOT',
-    ];
-
     protected $changeListenerCallback;
 
-    public function select(
-        array   $whereCriteria,
-        ?string $order = null,
-        ?int    $limit = null,
-        ?int    $offset = null,
-        ?string $groupBy = null,
-        array   $columns = []
-    )
+    public function select(array|string $columns = '*'): SelectorBuilder
     {
-        $criteria = $this->buildWhere($whereCriteria);
-        $timeStart = microtime(true);
-
-        if ($columns && count($columns)) {
-            $columns = trim(implode(',', $columns));
-        } else {
-            $columns = '*';
-        }
-
-        if ($criteria['where']) {
-            $sql = "SELECT {$columns} FROM {$this->getTable()} WHERE " . $criteria['where'];
-        } else {
-            $sql = "SELECT {$columns} FROM {$this->getTable()} ";
-        }
-
-        if ($groupBy) {
-            $sql .= " GROUP BY " . $groupBy;
-        }
-
-        if ($order) {
-            $sql .= " ORDER BY " . $order;
-        }
-        if ($offset && $limit) {
-            $limit = (int)$offset . ',' . (int)$limit;
-            $sql .= " LIMIT $limit";
-        } elseif (!$offset && $limit) {
-            $sql .= " LIMIT " . (int)$limit;
-        }
-        $this->log(self::SELECT, $sql, $criteria['values'], $timeStart);
-        return $this->selectRaw($sql, $criteria['values']);
-    }
-
-    public function selectRaw($query, $preparedParameterValues = [])
-    {
-        $sth = $this->prepare($query);
-        $this->execute($sth, $preparedParameterValues);
-        return new PdoResult($sth, $preparedParameterValues);
+        return (new SelectorBuilder($this->getTable(), $this->connection))->columns($columns);
     }
 
     public function find($id)
@@ -132,54 +67,26 @@ class PdoModel
         return $sth->fetch(\PDO::FETCH_ASSOC);
     }
 
-    public function count(array $whereCriteria): int
-    {
-        $timeStart = microtime(true);
-        $criteria = $this->buildWhere($whereCriteria);
-        $sql = "SELECT count(*) FROM `{$this->getTable()}` WHERE " . $criteria['where'];
-        $sth = $this->prepare($sql);
-
-        $this->execute($sth, $criteria['values'] ?? []);
-        $result = $sth->fetch(\PDO::FETCH_ASSOC);
-        $this->log(self::SELECT, $sql, $criteria['values'], $timeStart);
-
-        return (int)$result['count(*)'];
-    }
-
-    public function max($column = 'id', array $whereCriteria = []): int
+    public function max($column = 'id'): int
     {
         $column = $this->getPrimaryKey();
         $timeStart = microtime(true);
-        $criteria = $this->buildWhere($whereCriteria);
-
         $sql = "SELECT MAX({$column}) FROM {$this->getTable()}";
-        if ($criteria['where']) {
-            $sql .= " WHERE " . $criteria['where'];
-        }
-
         $sth = $this->prepare($sql);
         $this->execute($sth, $criteria['values'] ?? []);
         $result = $sth->fetch();
-
         $this->log(self::SELECT, $sql, [], $timeStart);
         return (int)reset($result);
     }
 
-    public function min(string $column = 'id', array $whereCriteria = []): ?int
+    public function min(string $column = 'id'): ?int
     {
         $column = $this->getPrimaryKey();
         $timeStart = microtime(true);
-        $criteria = $this->buildWhere($whereCriteria);
-
         $sql = "SELECT MIN({$column}) FROM {$this->getTable()}";
-        if ($criteria['where']) {
-            $sql .= " WHERE " . $criteria['where'];
-        }
-
         $sth = $this->prepare($sql);
         $this->execute($sth, $criteria['values'] ?? []);
         $result = $sth->fetch();
-
         $this->log(self::SELECT, $sql, [], $timeStart);
         return (int)reset($result);
     }
@@ -412,32 +319,6 @@ class PdoModel
         return $result;
     }
 
-    public function updateWhere(array $whereCriteria, array $data)
-    {
-        if (empty($data) || empty($whereCriteria)) {
-            return false;
-        }
-
-        $records = $this->select($whereCriteria)->all();
-
-        $timeStart = microtime(true);
-        $criteria = $this->buildWhere($whereCriteria);
-        $updateData = $this->prepareUpdateData($data);
-        $values = array_merge($updateData['values'], $criteria['values']);
-
-        $sql = "UPDATE `{$this->getTable()}` SET " . $updateData['set'] . " WHERE " . $criteria['where'];
-        $sth = $this->prepare($sql);
-        $result = $this->execute($sth, $values ?? []);
-
-        if ($records) {
-            foreach ($records as $record) {
-                $this->changeListener($record[$this->getPrimaryKey()], $record);
-            }
-        }
-        $this->log(self::UPDATE, $sql, $values, $timeStart);
-        return $result;
-    }
-
     public function delete($id)
     {
         $record = $this->find($id);
@@ -452,84 +333,6 @@ class PdoModel
         }
         $this->log(self::DELETE, $sql, [$id], $timeStart);
         return $result;
-    }
-
-    public function deleteWhere(array $whereCriteria): int
-    {
-        if (empty($whereCriteria)) {
-            return false;
-        }
-
-        $records = $this->select($whereCriteria)->all();
-
-        $criteria = $this->buildWhere($whereCriteria);
-        $timeStart = microtime(true);
-        $sql = "DELETE FROM {$this->getTable()} WHERE " . $criteria['where'];
-        $sth = $this->prepare($sql);
-        $this->execute($sth, $criteria['values'] ?? []);
-        $result = (int)$sth->rowCount();
-
-        if ($records) {
-            foreach ($records as $record) {
-                $this->changeListener($record[$this->getPrimaryKey()], $record);
-            }
-        }
-        $this->log(self::DELETE, $sql, $criteria['values'], $timeStart);
-        return $result;
-    }
-
-    protected function buildWhere(array $whereCriteria = [])
-    {
-        $pairs = [];
-        $values = [];
-        $criteria = [];
-
-        if (!$whereCriteria || !count($whereCriteria)) {
-            return [
-                'where' => null,
-                'values' => null,
-            ];
-        }
-
-        foreach ($whereCriteria as $k => $v) {
-            if (is_array($v)) {
-
-                $key = $v[0];
-                $operand = $v[1];
-                $value = $v[2];
-
-                if (!in_array($operand, $this->whereOperands)) {
-                    throw new PdoModelException("Unsupported operand $operand in WHERE statement.");
-                }
-
-                if ($operand == 'IN' || $operand == 'in' || $operand == 'NOT IN' || $operand == 'not in') {
-                    if (!is_array($value)) {
-                        throw new PdoModelException("Value for $operand operand must be type of array only.");
-                    }
-                    $pairs[] = "{$key} {$operand} (" . implode(',', $value) . ")";
-                    continue;
-                }
-
-                if ($operand == 'IS' || $operand == 'is' || $operand == 'IS NOT' || $operand == 'is not') {
-                    $pairs[] = "{$key} {$operand} NULL";
-                    continue;
-                }
-
-                $pairs[] = "{$key} {$operand} ?";
-                $values[] = $value;
-            } else {
-                if (is_int($k)) { // array index
-                    $pairs[] = $v;
-                } else {
-                    $pairs[] = "{$k} = ?";
-                    $values[] = $v;
-                }
-            }
-        }
-        $criteria['where'] = implode(' AND ', $pairs);
-        $criteria['values'] = $values;
-
-        return $criteria;
     }
 
     protected function prepareUpdateData(array $data, bool $raw = false)

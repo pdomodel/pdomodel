@@ -20,7 +20,7 @@ class InsertTest extends TestCase
             ->execute();
 
         $model->insert($targetData);
-        $resultData = $model->select(['foo' => 'bar'])->first();
+        $resultData = $model->select()->whereEqual('foo', 'bar')->getFirstRow();
         $this->assertEquals($targetData, $resultData);
     }
 }

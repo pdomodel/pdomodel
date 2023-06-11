@@ -8,17 +8,14 @@ class YoutubeVideosModel extends \PdoModel\PdoModel
 $connection = \PdoModel\PdoFactory::createConnection('127.0.0.1', 'dbname', 'username', 'password');
 $youtubeVideosModel = new YoutubeVideosModel($connection);
 
-$result = $youtubeVideosModel->select(
-    whereCriteria: [
-        ['published', 1],
-        ['likes', '>', 100],
-    ],
-    order: 'likes desc',
-    limit: 100,
-    offset: 2000,
-    groupBy: 'author',
-    columns: ['id', 'likes', 'url']
-)->all();
+$result = $youtubeVideosModel->select(['id', 'likes', 'url'])
+            ->whereEqual('published', 1)
+            ->where('likes', '>', 100)
+            ->orderBy('likes desc')
+            ->limit(100)
+            ->offset(2000)
+            ->groupBy('author')
+            ->getAllRows();
 var_dump($result);
 ```
 
