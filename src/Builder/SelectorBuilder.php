@@ -127,7 +127,13 @@ class SelectorBuilder
     protected function execute(): PDOStatement
     {
         $sth = $this->connection->prepare($this->buildSql());
-        $sth->execute($this->preparedParameterValues);
+        if (!$sth) {
+            throw new PdoModelException('Error in creating STH ' . $sth->errorInfo()[2]);
+        }
+        $succeed = $sth->execute($this->preparedParameterValues);
+        if (!$succeed) {
+            throw new PdoModelException($sth->errorInfo()[2]);
+        }
         return $sth;
     }
 

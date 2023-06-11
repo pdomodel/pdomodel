@@ -59,11 +59,8 @@ class PdoModel
     {
         $timeStart = microtime(true);
         $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ? LIMIT 1";
-        $sth = $this->prepare($sql);
-        $this->execute($sth, [$id]);
-
+        $sth = $this->execute($sql, [$id]);
         $this->log(self::SELECT, $sql, $id, $timeStart);
-
         return $sth->fetch(\PDO::FETCH_ASSOC);
     }
 
@@ -72,8 +69,7 @@ class PdoModel
         $column = $this->getPrimaryKey();
         $timeStart = microtime(true);
         $sql = "SELECT MAX({$column}) FROM {$this->getTable()}";
-        $sth = $this->prepare($sql);
-        $this->execute($sth, $criteria['values'] ?? []);
+        $sth = $this->execute($sql, $criteria['values'] ?? []);
         $result = $sth->fetch();
         $this->log(self::SELECT, $sql, [], $timeStart);
         return (int)reset($result);
@@ -84,8 +80,7 @@ class PdoModel
         $column = $this->getPrimaryKey();
         $timeStart = microtime(true);
         $sql = "SELECT MIN({$column}) FROM {$this->getTable()}";
-        $sth = $this->prepare($sql);
-        $this->execute($sth, $criteria['values'] ?? []);
+        $sth = $this->execute($sql, $criteria['values'] ?? []);
         $result = $sth->fetch();
         $this->log(self::SELECT, $sql, [], $timeStart);
         return (int)reset($result);
@@ -95,12 +90,9 @@ class PdoModel
     {
         $timeStart = microtime(true);
         $sql = "SELECT SUM({$column}) FROM {$this->getTable()}";
-        $sth = $this->prepare($sql);
-        $this->execute($sth);
+        $sth = $this->execute($sql);
         $result = $sth->fetch(\PDO::FETCH_ASSOC);
-
         $this->log(self::SELECT, $sql, [], $timeStart);
-
         return (int)reset($result);
     }
 
@@ -113,14 +105,8 @@ class PdoModel
         }
         $insertData = $this->prepareInsertData($data);
         $sql = 'INSERT ' . $ignoreSql . "INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
-        $sth = $this->prepare($sql);
-
-        $sthRes = $this->execute($sth, $insertData['values'] ?? []);
-        if ($sthRes === false) {
-            throw new PdoModelException($sth->errorInfo()[2]);
-        }
+        $this->execute($sql, $insertData['values'] ?? []);
         $result = $this->getLastInsertId();
-
         if ($result && $record = $this->find($result)) {
             $this->changeListener($record[$this->getPrimaryKey()], $record);
         }
@@ -134,17 +120,13 @@ class PdoModel
         $timeStart = microtime(true);
         $insertData = $this->prepareInsertData($data);
         $sql = "REPLACE INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
-        $sth = $this->prepare($sql);
-
-        $this->execute($sth, $insertData['values'] ?? []);
+        $this->execute($sql, $insertData['values'] ?? []);
         $result = $this->getLastInsertId();
-
         if ($result) {
             $record = $this->find($result);
             $this->changeListener($record[$this->getPrimaryKey()], $record);
         }
         $this->log(self::INSERT, $sql, $insertData['values'], $timeStart);
-
         return $result;
     }
 
@@ -188,9 +170,7 @@ class PdoModel
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
             $sql = 'INSERT ' . $ignoreSql . "INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart}";
-            $sth = $this->prepare($sql);
-            $res = $this->execute($sth, $valuesPart ?? []);
-
+            $res = $this->execute($sql, $valuesPart ?? []);
             $id = $this->getLastInsertId();
             if ($id) {
                 $record = $this->find($id);
@@ -212,11 +192,10 @@ class PdoModel
         $values = array_merge($insertData['values'], $updateData['values']);
 
         $sql = "INSERT INTO `{$this->getTable()}` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
-        $sth = $this->prepare($sql);
         if ($raw) {
-            $result = $this->execute($sth);
+            $result = $this->execute($sql);
         } else {
-            $result = $this->execute($sth, $values ?? []);
+            $result = $this->execute($sql, $values ?? []);
         }
 
         $this->log(self::INSERT_UPDATE, $sql, $values, $timeStart);
@@ -268,8 +247,7 @@ class PdoModel
             $valuesSqlPart = implode(',', $valuesSqlPart);
             $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateSql}";
 
-            $sth = $this->prepare($sql);
-            $res = $this->execute($sth, $valuesPart ?? []);
+            $res = $this->execute($sql, $valuesPart ?? []);
 
             $id = $this->getLastInsertId();
             if ($id) {
@@ -286,9 +264,7 @@ class PdoModel
 
         $timeStart = microtime(true);
         $sql = "UPDATE {$this->getTable()} SET {$column} = {$column} + {$amount} WHERE id = ?";
-        $sth = $this->prepare($sql);
-        $res = $this->execute($sth, [$id]);
-
+        $res = $this->execute($sql, [$id]);
         if ($record) {
             $this->changeListener($id, $record);
         }
@@ -309,9 +285,7 @@ class PdoModel
         $values = array_merge($updateData['values'], [$id]);
 
         $sql = "UPDATE `{$this->getTable()}` SET " . $updateData['set'] . " WHERE id = ?";
-        $sth = $this->prepare($sql);
-        $result = $this->execute($sth, $values ?? []);
-
+        $result = $this->execute($sql, $values ?? []);
         if ($record) {
             $this->changeListener($id, $record);
         }
@@ -325,8 +299,7 @@ class PdoModel
 
         $timeStart = microtime(true);
         $sql = "DELETE FROM {$this->getTable()} WHERE id = ?";
-        $sth = $this->prepare($sql);
-        $result = $this->execute($sth, [$id]);
+        $result = $this->execute($sql, [$id]);
 
         if ($record) {
             $this->changeListener($id, $record);
@@ -405,18 +378,19 @@ class PdoModel
         return new CreateTableBuilder($name, $this->connection);
     }
 
-    public function prepare($query, $options = [])
+    protected function execute(string $query, array $data = []): \PDOStatement
     {
-        return $this->connection->prepare($query, $options);
-    }
-
-    protected function execute(\PDOStatement $sth, array $data = [])
-    {
-        foreach ($data as $item) {
-            if (is_array($item)) {
-                throw new PdoModelException('Array ' . json_encode($item) . ' cant be statement value');
-            }
+        $sth = $this->connection->prepare($query);
+        if (!$sth) {
+            throw new PdoModelException('Error in creating STH ' . $sth->errorInfo()[2]);
         }
-        return $sth->execute($data);
+        if ($data && !array_is_list($data)) {
+            throw new PdoModelException('Wrong statement values structure ' . json_encode($data));
+        }
+        $succeed = $sth->execute($data);
+        if (!$succeed) {
+            throw new PdoModelException($sth->errorInfo()[2]);
+        }
+        return $sth;
     }
 }
