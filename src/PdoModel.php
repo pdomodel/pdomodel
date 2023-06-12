@@ -181,10 +181,10 @@ class PdoModel
         return true;
     }
 
-    public function increment($id, $column, $amount = 1): bool
+    public function increment($primaryKeyValue, $column, $amount = 1): bool
     {
-        $sql = "UPDATE `" . static::TABLE . "` SET {$column} = {$column} + {$amount} WHERE id = ?";
-        return $this->execute($sql, [$id]);
+        $sql = "UPDATE `" . static::TABLE . "` SET {$column} = {$column} + {$amount} WHERE " . static::PRIMARY_KEY . " = ?";
+        return $this->execute($sql, [$primaryKeyValue]);
     }
 
     public function update(string $primaryKeyValue, array $data): bool
@@ -206,10 +206,10 @@ class PdoModel
         return $this->execute($sql, $values);
     }
 
-    public function delete($id): bool
+    public function delete(string $primaryKeyValue): bool
     {
-        $sql = "DELETE FROM `" . static::TABLE . "` WHERE id = ?";
-        return $this->execute($sql, [$id]);
+        $sql = "DELETE FROM `" . static::TABLE . "` WHERE " . static::PRIMARY_KEY . " = ?";
+        return $this->execute($sql, [$primaryKeyValue]);
     }
 
     public function getLastInsertId($sequenceName = null): bool|string
