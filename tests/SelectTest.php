@@ -1,13 +1,15 @@
 <?php
 
 use PdoModel\PdoModel;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
+#[CoversClass(PdoModel::class)]
+#[UsesClass(\PdoModel\Builder\CreateTableBuilder::class)]
+#[UsesClass(\PdoModel\Builder\SelectorBuilder::class)]
 class SelectTest extends TestCase
 {
-    /**
-     * @covers \PdoModel\PdoModel::select
-     */
     public function testSelect(): void
     {
         $insertData = [
