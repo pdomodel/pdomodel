@@ -46,24 +46,28 @@ class PdoModel
         return (int)$this->select('SUM(' . $column . ') as res')->getOneValue('res');
     }
 
-    public function insert(array $data, bool $ignore = false): int
+    public function insert(array $data, bool $ignore = false, bool $replace = false): int
     {
-        $ignoreSql = '';
-        if ($ignore) {
-            $ignoreSql = 'IGNORE ';
+        if (array_is_list($data)) {
+            throw new PdoModelException('Data keys should be column names, not numbers: ' . json_encode($data));
         }
-        $insertData = $this->prepareInsertData($data);
-        $sql = 'INSERT ' . $ignoreSql . "INTO `" . static::TABLE . "` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
-        $this->execute($sql, $insertData['values']);
+        $markers = [];
+        $values = [];
+        $columns = [];
+        foreach ($data as $k => $v) {
+            $columns[] = "`$k`";
+            $markers[] = "?";
+            $values[] = $v;
+        }
+        $sql = $replace ? 'REPLACE INTO ' : ($ignore ? 'INSERT IGNORE INTO ' : 'INSERT INTO ');
+        $sql .= static::TABLE . " (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $markers) . ")";
+        $this->execute($sql, $values);
         return $this->getLastInsertId();
     }
 
     public function replace(array $data): int
     {
-        $insertData = $this->prepareInsertData($data);
-        $sql = "REPLACE INTO `" . static::TABLE . "` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
-        $this->execute($sql, $insertData['values']);
-        return $this->getLastInsertId();
+        return $this->insert($data, replace: true);
     }
 
     public function insertBatch(array $arraysOfData, bool $ignore = false): bool
@@ -107,21 +111,26 @@ class PdoModel
         return true;
     }
 
-    public function insertUpdate(array $insert, array $update, bool $raw = false): bool
+    public function insertUpdate(array $insertData, array $updateData): int
     {
-        if (empty($insert) || empty($update)) {
+        if (empty($insertData) || empty($updateData)) {
             return false;
         }
-        $insertData = $this->prepareUpdateData($insert, $raw);
-        $updateData = $this->prepareUpdateData($update, $raw);
-        $values = array_merge($insertData['values'], $updateData['values']);
-
-        $sql = "INSERT INTO `" . static::TABLE . "` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
-        if ($raw) {
-            return $this->execute($sql);
-        } else {
-            return $this->execute($sql, $values ?? []);
+        $insertPairs = [];
+        $updatePairs = [];
+        $values = [];
+        foreach ($insertData as $k => $v) {
+            $insertPairs[] = "`{$k}` = ?";
+            $values[] = $v;
         }
+        foreach ($updateData as $k => $v) {
+            $updatePairs[] = "`{$k}` = ?";
+            $values[] = $v;
+        }
+        $sql = "INSERT INTO `" . static::TABLE . "` SET " . implode(', ', $insertPairs)
+            . " ON DUPLICATE KEY UPDATE " . implode(', ', $updatePairs);
+        $this->execute($sql, $values);
+        return $this->getLastInsertId();
     }
 
     public function insertUpdateBatch(array $insertRows, array $updateColumns = [], array $incrementColumns = []): bool
@@ -178,14 +187,22 @@ class PdoModel
         return $this->execute($sql, [$id]);
     }
 
-    public function update($id, array $data): bool
+    public function update(string $primaryKeyValue, array $data): bool
     {
         if (empty($data)) {
             return false;
         }
-        $updateData = $this->prepareUpdateData($data);
-        $values = array_merge($updateData['values'], [$id]);
-        $sql = "UPDATE `" . static::TABLE . "` SET " . $updateData['set'] . " WHERE id = ?";
+        if (array_is_list($data)) {
+            throw new PdoModelException('Data keys should be column names, not numbers: ' . json_encode($data));
+        }
+        $pairs = [];
+        $values = [];
+        foreach ($data as $k => $v) {
+            $pairs[] = "`{$k}` = ?";
+            $values[] = $v;
+        }
+        $values = array_merge($values, [$primaryKeyValue]);
+        $sql = "UPDATE `" . static::TABLE . "` SET " . implode(', ', $pairs) . " WHERE " . static::PRIMARY_KEY . " = ?";
         return $this->execute($sql, $values);
     }
 
@@ -193,46 +210,6 @@ class PdoModel
     {
         $sql = "DELETE FROM `" . static::TABLE . "` WHERE id = ?";
         return $this->execute($sql, [$id]);
-    }
-
-    protected function prepareUpdateData(array $data, bool $raw = false): array
-    {
-        $updateData = [];
-        $pairs = [];
-        $values = [];
-        foreach ($data as $k => $v) {
-            if ($raw) {
-                $pairs[] = "$k = $v";
-            } else {
-                $pairs[] = "`{$k}` = ?";
-            }
-            $values[] = $v;
-        }
-        $updateData['set'] = implode(', ', $pairs);
-        $updateData['values'] = $values;
-
-        return $updateData;
-    }
-
-    protected function prepareInsertData(array $data): array
-    {
-        $insertData = [];
-        $params = [];
-        $values = [];
-        $columns = [];
-
-        foreach ($data as $k => $v) {
-            if ($k === 0) {
-                throw new PdoModelException('Insert keys must be column names. Got number instead.');
-            }
-            $columns[] = "`$k`";
-            $params[] = "?";
-            $values[] = $v;
-        }
-        $insertData['values'] = $values;
-        $insertData['columns'] = implode(', ', $columns);
-        $insertData['params'] = implode(', ', $params);
-        return $insertData;
     }
 
     public function getLastInsertId($sequenceName = null): bool|string
