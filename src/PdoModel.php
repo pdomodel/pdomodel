@@ -38,9 +38,9 @@ class PdoModel
         if (!$this->table) {
             throw new PdoModelException("Database table name can't be empty");
         }
-
         return $this->table;
     }
+
     const MAX_PREPARED_STMT_COUNT = 60000;
 
     public function select(array|string $columns = '*'): SelectorBuilder
@@ -48,37 +48,24 @@ class PdoModel
         return (new SelectorBuilder($this->getTable(), $this->connection))->columns($columns);
     }
 
-    public function find($id)
+    public function find(string $primaryKeyValue): array
     {
-        $sql = "SELECT * FROM {$this->getTable()} WHERE {$this->getPrimaryKey()} = ? LIMIT 1";
-        $sth = $this->execute($sql, [$id]);
-        return $sth->fetch(\PDO::FETCH_ASSOC);
+        return $this->select()->whereEqual($this->getPrimaryKey(), $primaryKeyValue)->getFirstRow();
     }
 
-    public function max($column = 'id'): int
+    public function max(string $column = 'id'): int
     {
-        $column = $this->getPrimaryKey();
-        $sql = "SELECT MAX({$column}) FROM {$this->getTable()}";
-        $sth = $this->execute($sql, $criteria['values'] ?? []);
-        $result = $sth->fetch();
-        return (int)reset($result);
+        return (int)$this->select('MAX(' . $column . ') as res')->getOneValue('res');
     }
 
-    public function min(string $column = 'id'): ?int
+    public function min(string $column = 'id'): int
     {
-        $column = $this->getPrimaryKey();
-        $sql = "SELECT MIN({$column}) FROM {$this->getTable()}";
-        $sth = $this->execute($sql, $criteria['values'] ?? []);
-        $result = $sth->fetch();
-        return (int)reset($result);
+        return (int)$this->select('MIN(' . $column . ') as res')->getOneValue('res');
     }
 
     public function sum($column): int
     {
-        $sql = "SELECT SUM({$column}) FROM {$this->getTable()}";
-        $sth = $this->execute($sql);
-        $result = $sth->fetch(\PDO::FETCH_ASSOC);
-        return (int)reset($result);
+        return (int)$this->select('SUM(' . $column . ') as res')->getOneValue('res');
     }
 
     public function insert(array $data, bool $ignore = false): int
@@ -89,7 +76,7 @@ class PdoModel
         }
         $insertData = $this->prepareInsertData($data);
         $sql = 'INSERT ' . $ignoreSql . "INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
-        $this->execute($sql, $insertData['values'] ?? []);
+        $this->execute($sql, $insertData['values']);
         return $this->getLastInsertId();
     }
 
@@ -97,11 +84,11 @@ class PdoModel
     {
         $insertData = $this->prepareInsertData($data);
         $sql = "REPLACE INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
-        $this->execute($sql, $insertData['values'] ?? []);
+        $this->execute($sql, $insertData['values']);
         return $this->getLastInsertId();
     }
 
-    public function insertBatch(array $arraysOfData, bool $ignore = false)
+    public function insertBatch(array $arraysOfData, bool $ignore = false): bool
     {
         $keys = array_keys($arraysOfData[0]);
         $values = [];
@@ -114,7 +101,7 @@ class PdoModel
         return $res;
     }
 
-    protected function insertBatchRaw(array $keys, array $values, bool $ignore = false)
+    protected function insertBatchRaw(array $keys, array $values, bool $ignore = false): bool
     {
         // Hard but fast
         $keysCount = count($keys);
@@ -140,12 +127,12 @@ class PdoModel
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
             $sql = 'INSERT ' . $ignoreSql . "INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart}";
-            $res = $this->execute($sql, $valuesPart ?? []);
+            $this->execute($sql, $valuesPart ?? []);
         }
-        return $res;
+        return true;
     }
 
-    public function insertUpdate(array $insert, array $update, bool $raw = false)
+    public function insertUpdate(array $insert, array $update, bool $raw = false): bool
     {
         if (empty($insert) || empty($update)) {
             return false;
@@ -156,14 +143,13 @@ class PdoModel
 
         $sql = "INSERT INTO `{$this->getTable()}` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
         if ($raw) {
-            $result = $this->execute($sql);
+            return $this->execute($sql);
         } else {
-            $result = $this->execute($sql, $values ?? []);
+            return $this->execute($sql, $values ?? []);
         }
-        return $result;
     }
 
-    public function insertUpdateBatch(array $insertRows, array $updateColumns = [], array $incrementColumns = [])
+    public function insertUpdateBatch(array $insertRows, array $updateColumns = [], array $incrementColumns = []): bool
     {
         $insertKeys = array_keys($insertRows[0]);
         $insertValues = [];
@@ -185,7 +171,7 @@ class PdoModel
         return $res;
     }
 
-    protected function insertUpdateBatchRaw(array $insertKeys, array $insertValues, string $updateSql)
+    protected function insertUpdateBatchRaw(array $insertKeys, array $insertValues, string $updateSql): bool
     {
         // Hard but fast
         $keysCount = count($insertKeys);
@@ -207,18 +193,18 @@ class PdoModel
             $valuesSqlPart = implode(',', $valuesSqlPart);
             $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateSql}";
 
-            $res = $this->execute($sql, $valuesPart ?? []);
+            $this->execute($sql, $valuesPart ?? []);
         }
-        return $res;
+        return true;
     }
 
-    public function increment($id, $column, $amount = 1)
+    public function increment($id, $column, $amount = 1): bool
     {
         $sql = "UPDATE {$this->getTable()} SET {$column} = {$column} + {$amount} WHERE id = ?";
         return $this->execute($sql, [$id]);
     }
 
-    public function update($id, array $data)
+    public function update($id, array $data): bool
     {
         if (empty($data)) {
             return false;
@@ -226,16 +212,16 @@ class PdoModel
         $updateData = $this->prepareUpdateData($data);
         $values = array_merge($updateData['values'], [$id]);
         $sql = "UPDATE `{$this->getTable()}` SET " . $updateData['set'] . " WHERE id = ?";
-        return $this->execute($sql, $values ?? []);
+        return $this->execute($sql, $values);
     }
 
-    public function delete($id)
+    public function delete($id): bool
     {
         $sql = "DELETE FROM {$this->getTable()} WHERE id = ?";
         return $this->execute($sql, [$id]);
     }
 
-    protected function prepareUpdateData(array $data, bool $raw = false)
+    protected function prepareUpdateData(array $data, bool $raw = false): array
     {
         $updateData = [];
         $pairs = [];
@@ -254,7 +240,7 @@ class PdoModel
         return $updateData;
     }
 
-    protected function prepareInsertData(array $data)
+    protected function prepareInsertData(array $data): array
     {
         $insertData = [];
         $params = [];
@@ -285,7 +271,7 @@ class PdoModel
         return new CreateTableBuilder($name, $this->connection);
     }
 
-    protected function execute(string $query, array $data = []): \PDOStatement
+    protected function execute(string $query, array $data = []): bool
     {
         $sth = $this->connection->prepare($query);
         if (!$sth) {
@@ -298,6 +284,6 @@ class PdoModel
         if (!$succeed) {
             throw new PdoModelException($sth->errorInfo()[2]);
         }
-        return $sth;
+        return $sth->rowCount() > 0;
     }
 }
