@@ -10,20 +10,31 @@ class PdoModel
     const TABLE = '';
     const PRIMARY_KEY = 'id';
     protected \PDO $connection;
-    const MAX_PREPARED_STMT_COUNT = 60000;
+    protected string $dynamicTable = '';
 
     public function __construct(\PDO $connection)
     {
         $this->connection = $connection;
+        $this->setTable(static::TABLE);
+    }
 
-        if (static::TABLE === '') {
-            throw new PdoModelException('You should define table name by extending PDOModel class');
+    public function setTable(string $tableName): static
+    {
+        $this->dynamicTable = $tableName;
+        return $this;
+    }
+
+    public function getTable(): string
+    {
+        if ($this->dynamicTable === '') {
+            throw new PdoModelException('You should define table name by TABLE constant or setTable method');
         }
+        return $this->dynamicTable;
     }
 
     public function select(array|string $columns = '*'): SelectorBuilder
     {
-        return (new SelectorBuilder(static::TABLE, $this->connection))->columns($columns);
+        return (new SelectorBuilder($this->getTable(), $this->connection))->columns($columns);
     }
 
     public function find(string $primaryKeyValue): array
@@ -60,7 +71,7 @@ class PdoModel
             $values[] = $v;
         }
         $sql = $replace ? 'REPLACE INTO ' : ($ignore ? 'INSERT IGNORE INTO ' : 'INSERT INTO ');
-        $sql .= static::TABLE . " (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $markers) . ")";
+        $sql .= $this->getTable() . " (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $markers) . ")";
         $this->execute($sql, $values);
         return $this->getLastInsertId();
     }
@@ -89,7 +100,8 @@ class PdoModel
         $keysCount = count($keys);
         $valuesCount = count($values);
         $valuesSqlCount = $valuesCount / $keysCount;
-        $valuesSqlChunkSize = floor(self::MAX_PREPARED_STMT_COUNT / $keysCount);
+        $maxPreparedSmtCount = 60000;
+        $valuesSqlChunkSize = floor($maxPreparedSmtCount / $keysCount);
         $valuesChunkSize = $valuesSqlChunkSize * $keysCount;
         $placeHolders = array_fill(0, $keysCount, '?');
         $placeHolders = implode(',', $placeHolders);
@@ -105,7 +117,7 @@ class PdoModel
             $valuesPart = array_slice($values, $valuesOffset * $valuesSqlChunkSize * $keysCount, $valuesChunkSize);
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
-            $sql = 'INSERT ' . $ignoreSql . "INTO `" . static::TABLE . "` ({$keys}) VALUES {$valuesSqlPart}";
+            $sql = 'INSERT ' . $ignoreSql . "INTO `" . $this->getTable() . "` ({$keys}) VALUES {$valuesSqlPart}";
             $this->execute($sql, $valuesPart ?? []);
         }
         return true;
@@ -127,7 +139,7 @@ class PdoModel
             $updatePairs[] = "`{$k}` = ?";
             $values[] = $v;
         }
-        $sql = "INSERT INTO `" . static::TABLE . "` SET " . implode(', ', $insertPairs)
+        $sql = "INSERT INTO `" . $this->getTable() . "` SET " . implode(', ', $insertPairs)
             . " ON DUPLICATE KEY UPDATE " . implode(', ', $updatePairs);
         $this->execute($sql, $values);
         return $this->getLastInsertId();
@@ -161,7 +173,8 @@ class PdoModel
         $keysCount = count($insertKeys);
         $valuesCount = count($insertValues);
         $valuesSqlCount = $valuesCount / $keysCount;
-        $valuesSqlChunkSize = floor(self::MAX_PREPARED_STMT_COUNT / $keysCount);
+        $maxPreparedSmtCount = 60000;
+        $valuesSqlChunkSize = floor($maxPreparedSmtCount / $keysCount);
         $valuesChunkSize = $valuesSqlChunkSize * $keysCount;
         $placeHolders = array_fill(0, $keysCount, '?');
         $placeHolders = implode(',', $placeHolders);
@@ -174,7 +187,7 @@ class PdoModel
             $valuesPart = array_slice($insertValues, $valuesOffset * $valuesSqlChunkSize * $keysCount, $valuesChunkSize);
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
-            $sql = "INSERT INTO `" . static::TABLE . "` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateSql}";
+            $sql = "INSERT INTO `" . $this->getTable() . "` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateSql}";
 
             $this->execute($sql, $valuesPart ?? []);
         }
@@ -183,7 +196,7 @@ class PdoModel
 
     public function increment(string $primaryKeyValue, string $columnName, int $amount = 1): bool
     {
-        $sql = "UPDATE `" . static::TABLE . "` SET {$columnName} = {$columnName} + {$amount} WHERE " . static::PRIMARY_KEY . " = ?";
+        $sql = "UPDATE `" . $this->getTable() . "` SET {$columnName} = {$columnName} + {$amount} WHERE " . static::PRIMARY_KEY . " = ?";
         return $this->execute($sql, [$primaryKeyValue]);
     }
 
@@ -202,13 +215,13 @@ class PdoModel
             $values[] = $v;
         }
         $values = array_merge($values, [$primaryKeyValue]);
-        $sql = "UPDATE `" . static::TABLE . "` SET " . implode(', ', $pairs) . " WHERE " . static::PRIMARY_KEY . " = ?";
+        $sql = "UPDATE `" . $this->getTable() . "` SET " . implode(', ', $pairs) . " WHERE " . static::PRIMARY_KEY . " = ?";
         return $this->execute($sql, $values);
     }
 
     public function delete(string $primaryKeyValue): bool
     {
-        $sql = "DELETE FROM `" . static::TABLE . "` WHERE " . static::PRIMARY_KEY . " = ?";
+        $sql = "DELETE FROM `" . $this->getTable() . "` WHERE " . static::PRIMARY_KEY . " = ?";
         return $this->execute($sql, [$primaryKeyValue]);
     }
 
