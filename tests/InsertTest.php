@@ -12,8 +12,9 @@ class InsertTest extends TestCase
     {
         $targetData = ['id' => 1, 'foo' => 'bar'];
 
-        $testDb = new \PDO('sqlite::memory:');
-        $model = (new PdoModel($testDb))->setTable('test_table');
+        $model = new class(new \PDO('sqlite::memory:')) extends PdoModel {
+            const TABLE = 'test_table';
+        };
         $model->createTable('test_table')
             ->column('id', autoIncrement: true, primaryKey: true)
             ->column('foo', type: 'string')

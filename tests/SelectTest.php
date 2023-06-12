@@ -18,15 +18,15 @@ class SelectTest extends TestCase
         $targetResult = [['foo' => 'ok', 'height' => 20]];
 
 
-        $model = new PdoModel(new \PDO('sqlite::memory:'));
+        $model = new class(new \PDO('sqlite::memory:')) extends PdoModel {
+            const TABLE = 'test_table';
+        };
         $model->createTable('test_table')
             ->column('id', autoIncrement: true, primaryKey: true)
             ->column('height')
             ->column('foo', type: 'string')
             ->column('day')
             ->execute();
-        $model->setTable('test_table');
-
         foreach ($insertData as $row) {
             $model->insert($row);
         }

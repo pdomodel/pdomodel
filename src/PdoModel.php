@@ -7,58 +7,36 @@ use PdoModel\Builder\SelectorBuilder;
 
 class PdoModel
 {
-    protected string $table;
-    protected string $primaryKey = 'id';
+    const TABLE = '';
+    const PRIMARY_KEY = 'id';
     protected \PDO $connection;
+    const MAX_PREPARED_STMT_COUNT = 60000;
 
     public function __construct(\PDO $connection)
     {
         $this->connection = $connection;
-    }
 
-    public function setTable($tableName)
-    {
-        $this->table = $tableName;
-        return $this;
-    }
-
-    public function setPrimaryKey($key)
-    {
-        $this->primaryKey = $key;
-        return $this;
-    }
-
-    public function getPrimaryKey()
-    {
-        return $this->primaryKey;
-    }
-
-    public function getTable()
-    {
-        if (!$this->table) {
-            throw new PdoModelException("Database table name can't be empty");
+        if (static::TABLE === '') {
+            throw new PdoModelException('You should define table name by extending PDOModel class');
         }
-        return $this->table;
     }
-
-    const MAX_PREPARED_STMT_COUNT = 60000;
 
     public function select(array|string $columns = '*'): SelectorBuilder
     {
-        return (new SelectorBuilder($this->getTable(), $this->connection))->columns($columns);
+        return (new SelectorBuilder(static::TABLE, $this->connection))->columns($columns);
     }
 
     public function find(string $primaryKeyValue): array
     {
-        return $this->select()->whereEqual($this->getPrimaryKey(), $primaryKeyValue)->getFirstRow();
+        return $this->select()->whereEqual(static::PRIMARY_KEY, $primaryKeyValue)->getFirstRow();
     }
 
-    public function max(string $column = 'id'): int
+    public function max(string $column = self::PRIMARY_KEY): int
     {
         return (int)$this->select('MAX(' . $column . ') as res')->getOneValue('res');
     }
 
-    public function min(string $column = 'id'): int
+    public function min(string $column = self::PRIMARY_KEY): int
     {
         return (int)$this->select('MIN(' . $column . ') as res')->getOneValue('res');
     }
@@ -75,7 +53,7 @@ class PdoModel
             $ignoreSql = 'IGNORE ';
         }
         $insertData = $this->prepareInsertData($data);
-        $sql = 'INSERT ' . $ignoreSql . "INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
+        $sql = 'INSERT ' . $ignoreSql . "INTO `" . static::TABLE . "` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
         $this->execute($sql, $insertData['values']);
         return $this->getLastInsertId();
     }
@@ -83,7 +61,7 @@ class PdoModel
     public function replace(array $data): int
     {
         $insertData = $this->prepareInsertData($data);
-        $sql = "REPLACE INTO `{$this->getTable()}` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
+        $sql = "REPLACE INTO `" . static::TABLE . "` (" . $insertData['columns'] . ") VALUES (" . $insertData['params'] . ")";
         $this->execute($sql, $insertData['values']);
         return $this->getLastInsertId();
     }
@@ -113,10 +91,7 @@ class PdoModel
         $placeHolders = implode(',', $placeHolders);
         $valuesSql = array_fill(0, $valuesSqlCount, '(' . $placeHolders . ')');
         $keys = implode(',', $keys);
-        $table = $this->getTable();
         $valuesOffset = 0;
-
-        $res = false;
 
         $ignoreSql = '';
         if ($ignore) {
@@ -126,7 +101,7 @@ class PdoModel
             $valuesPart = array_slice($values, $valuesOffset * $valuesSqlChunkSize * $keysCount, $valuesChunkSize);
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
-            $sql = 'INSERT ' . $ignoreSql . "INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart}";
+            $sql = 'INSERT ' . $ignoreSql . "INTO `" . static::TABLE . "` ({$keys}) VALUES {$valuesSqlPart}";
             $this->execute($sql, $valuesPart ?? []);
         }
         return true;
@@ -141,7 +116,7 @@ class PdoModel
         $updateData = $this->prepareUpdateData($update, $raw);
         $values = array_merge($insertData['values'], $updateData['values']);
 
-        $sql = "INSERT INTO `{$this->getTable()}` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
+        $sql = "INSERT INTO `" . static::TABLE . "` SET {$insertData['set']} ON DUPLICATE KEY UPDATE {$updateData['set']}";
         if ($raw) {
             return $this->execute($sql);
         } else {
@@ -183,7 +158,6 @@ class PdoModel
         $placeHolders = implode(',', $placeHolders);
         $valuesSql = array_fill(0, $valuesSqlCount, '(' . $placeHolders . ')');
         $keys = implode(',', $insertKeys);
-        $table = $this->getTable();
         $valuesOffset = 0;
 
         $res = false;
@@ -191,7 +165,7 @@ class PdoModel
             $valuesPart = array_slice($insertValues, $valuesOffset * $valuesSqlChunkSize * $keysCount, $valuesChunkSize);
             $valuesOffset++;
             $valuesSqlPart = implode(',', $valuesSqlPart);
-            $sql = "INSERT INTO `{$table}` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateSql}";
+            $sql = "INSERT INTO `" . static::TABLE . "` ({$keys}) VALUES {$valuesSqlPart} ON DUPLICATE KEY UPDATE {$updateSql}";
 
             $this->execute($sql, $valuesPart ?? []);
         }
@@ -200,7 +174,7 @@ class PdoModel
 
     public function increment($id, $column, $amount = 1): bool
     {
-        $sql = "UPDATE {$this->getTable()} SET {$column} = {$column} + {$amount} WHERE id = ?";
+        $sql = "UPDATE `" . static::TABLE . "` SET {$column} = {$column} + {$amount} WHERE id = ?";
         return $this->execute($sql, [$id]);
     }
 
@@ -211,13 +185,13 @@ class PdoModel
         }
         $updateData = $this->prepareUpdateData($data);
         $values = array_merge($updateData['values'], [$id]);
-        $sql = "UPDATE `{$this->getTable()}` SET " . $updateData['set'] . " WHERE id = ?";
+        $sql = "UPDATE `" . static::TABLE . "` SET " . $updateData['set'] . " WHERE id = ?";
         return $this->execute($sql, $values);
     }
 
     public function delete($id): bool
     {
-        $sql = "DELETE FROM {$this->getTable()} WHERE id = ?";
+        $sql = "DELETE FROM `" . static::TABLE . "` WHERE id = ?";
         return $this->execute($sql, [$id]);
     }
 
@@ -261,7 +235,7 @@ class PdoModel
         return $insertData;
     }
 
-    public function getLastInsertId($sequenceName = null)
+    public function getLastInsertId($sequenceName = null): bool|string
     {
         return $this->connection->lastInsertId($sequenceName);
     }
