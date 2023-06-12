@@ -41,7 +41,7 @@ class PdoModel
         return (int)$this->select('MIN(' . $column . ') as res')->getOneValue('res');
     }
 
-    public function sum($column): int
+    public function sum(string $column): int
     {
         return (int)$this->select('SUM(' . $column . ') as res')->getOneValue('res');
     }
@@ -181,9 +181,9 @@ class PdoModel
         return true;
     }
 
-    public function increment($primaryKeyValue, $column, $amount = 1): bool
+    public function increment(string $primaryKeyValue, string $columnName, int $amount = 1): bool
     {
-        $sql = "UPDATE `" . static::TABLE . "` SET {$column} = {$column} + {$amount} WHERE " . static::PRIMARY_KEY . " = ?";
+        $sql = "UPDATE `" . static::TABLE . "` SET {$columnName} = {$columnName} + {$amount} WHERE " . static::PRIMARY_KEY . " = ?";
         return $this->execute($sql, [$primaryKeyValue]);
     }
 
