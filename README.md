@@ -2,7 +2,7 @@
 ```php
 class YoutubeVideosModel extends \PdoModel\PdoModel
 {
-    protected $table = 'youtube_videos';
+    const TABLE = 'youtube_videos';
 }
 
 $connection = \PdoModel\PdoFactory::createConnection('127.0.0.1', 'dbname', 'username', 'password');
@@ -22,12 +22,7 @@ var_dump($result);
 ## Setup
 Install via composer
 ```shell
-composer require phpset/pdomodel
-```
-
-Create connection. Or you can provide to PdoModel constructor any other PDO connection
-```php
-$connection = \PdoModel\PdoFactory::createConnection('127.0.0.1', 'dbname', 'username', 'password');
+composer require pdomodel/pdomodel
 ```
 
 For Symfony just add PDO to DI in service config
@@ -39,11 +34,10 @@ PDO:
 ```
 
 ### Tests
-Run tests
 ```shell
+# run tests
 ./vendor/bin/phpunit
-```
-Check code coverage with tests
-```shell
+
+# Check coverage
 php -dxdebug.mode=coverage ./vendor/bin/phpunit --coverage-text
 ```
