@@ -76,6 +76,11 @@ class PdoModel
         return $this->getLastInsertId();
     }
 
+    public function insertIgnore(array $data)
+    {
+        return $this->insert($data, ignore: true);
+    }
+
     public function replace(array $data): int
     {
         return $this->insert($data, replace: true);
@@ -83,6 +88,9 @@ class PdoModel
 
     public function insertBatch(array $arraysOfData, bool $ignore = false): bool
     {
+        if (!array_is_list($arraysOfData)) {
+            throw new PdoModelException('ArraysOfData should be with index keys, got one array with text keys: ' . json_encode($arraysOfData));
+        }
         $keys = array_keys($arraysOfData[0]);
         $values = [];
         foreach ($arraysOfData as $data) {
@@ -123,10 +131,10 @@ class PdoModel
         return true;
     }
 
-    public function insertUpdate(array $insertData, array $updateData): int
+    public function insertUpdate(array $insertData, array $updateColumns): int
     {
         if (empty($insertData) || empty($updateData)) {
-            return false;
+            throw new PdoModelException('InsertUpdate arrays insertData and updateColumns cant be empty');
         }
         $insertPairs = [];
         $updatePairs = [];
@@ -135,9 +143,12 @@ class PdoModel
             $insertPairs[] = "`{$k}` = ?";
             $values[] = $v;
         }
-        foreach ($updateData as $k => $v) {
-            $updatePairs[] = "`{$k}` = ?";
-            $values[] = $v;
+        foreach ($updateColumns as $column) {
+            $updatePairs[] = "`{$column}` = ?";
+            if (!isset($insertData[$column])) {
+                throw new PdoModelException("InsertUpdate updateColumn '$column' not in array of insert data " . json_encode($insertData));
+            }
+            $values[] = $insertData[$column];
         }
         $sql = "INSERT INTO `" . $this->getTable() . "` SET " . implode(', ', $insertPairs)
             . " ON DUPLICATE KEY UPDATE " . implode(', ', $updatePairs);
@@ -147,6 +158,9 @@ class PdoModel
 
     public function insertUpdateBatch(array $insertRows, array $updateColumns = [], array $incrementColumns = []): bool
     {
+        if (!array_is_list($insertRows)) {
+            throw new PdoModelException('InsertRows should be with index keys, got one array with text keys: ' . json_encode($insertRows));
+        }
         $insertKeys = array_keys($insertRows[0]);
         $insertValues = [];
         foreach ($insertRows as $row) {
@@ -203,7 +217,7 @@ class PdoModel
     public function update(string $primaryKeyValue, array $data): bool
     {
         if (empty($data)) {
-            return false;
+            throw new PdoModelException("Update data can't be empty");
         }
         if (array_is_list($data)) {
             throw new PdoModelException('Data keys should be column names, not numbers: ' . json_encode($data));
