@@ -137,7 +137,7 @@ class SelectorBuilder
         return $sth;
     }
 
-    public function getFirstRow($fetchStyle = \PDO::FETCH_ASSOC): array
+    public function getFirstRow($fetchStyle = \PDO::FETCH_ASSOC): bool|array
     {
         return $this->execute()->fetch($fetchStyle);
     }
@@ -152,7 +152,7 @@ class SelectorBuilder
         return $this->execute()->fetchAll(\PDO::FETCH_COLUMN, $columnNumber);
     }
 
-    public function getAllRows($fetchStyle = \PDO::FETCH_ASSOC): array
+    public function getAllRows($fetchStyle = \PDO::FETCH_ASSOC): bool|array
     {
         return $this->execute()->fetchAll($fetchStyle);
     }
