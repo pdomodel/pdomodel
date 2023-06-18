@@ -143,14 +143,14 @@ class SelectorBuilder
         return $this->raw($this->buildSql(), $this->preparedParameterValues)->getFirstRow($fetchStyle);
     }
 
-    public function getOneValue($columnName)
+    public function getFirstValue($columnName = null): bool|int|string
     {
-        return $this->raw($this->buildSql(), $this->preparedParameterValues)->getOneValue($columnName);
+        return $this->raw($this->buildSql(), $this->preparedParameterValues)->getFirstValue($columnName);
     }
 
-    public function getColumnValues($columnNumber = 0): bool|array
+    public function getColumn($columnNumber = 0): bool|array
     {
-        return $this->raw($this->buildSql(), $this->preparedParameterValues)->getColumnValues($columnNumber);
+        return $this->raw($this->buildSql(), $this->preparedParameterValues)->getColumn($columnNumber);
     }
 
     public function getAllRows($fetchStyle = \PDO::FETCH_ASSOC): bool|array

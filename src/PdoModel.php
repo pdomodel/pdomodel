@@ -50,17 +50,17 @@ class PdoModel
 
     public function max(string $column = self::PRIMARY_KEY): int
     {
-        return (int)$this->select('MAX(' . $column . ') as res')->getOneValue('res');
+        return (int)$this->select('MAX(' . $column . ')')->getFirstValue();
     }
 
     public function min(string $column = self::PRIMARY_KEY): int
     {
-        return (int)$this->select('MIN(' . $column . ') as res')->getOneValue('res');
+        return (int)$this->select('MIN(' . $column . ')')->getFirstValue();
     }
 
     public function sum(string $column): int
     {
-        return (int)$this->select('SUM(' . $column . ') as res')->getOneValue('res');
+        return (int)$this->select('SUM(' . $column . ')')->getFirstValue();
     }
 
     public function insert(array $data, bool $ignore = false, bool $replace = false): int

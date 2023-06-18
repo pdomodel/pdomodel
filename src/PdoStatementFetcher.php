@@ -13,24 +13,31 @@ class PdoStatementFetcher
         $this->statement = $statement;
     }
 
-    public function getFirstRow($fetchStyle = \PDO::FETCH_ASSOC): bool|array
+    public function getFirstRow(int $fetchStyle = \PDO::FETCH_ASSOC): bool|array
     {
         $result = $this->statement->fetch($fetchStyle);
         return !empty($result) ? $result : false;
     }
 
-    public function getOneValue($columnName)
+    public function getFirstValue($columnName = null): bool|int|string
     {
-        return $this->getFirstRow()[$columnName];
+        $result = $this->getFirstRow();
+        if (!$result) {
+            return false;
+        }
+        if ($columnName) {
+            return $result[$columnName] ?? false;
+        }
+        return reset($result);
     }
 
-    public function getColumnValues($columnNumber = 0): bool|array
+    public function getColumn(int $columnNumber = 0): bool|array
     {
         $result = $this->statement->fetchAll(\PDO::FETCH_COLUMN, $columnNumber);
         return !empty($result) ? $result : false;
     }
 
-    public function getAllRows($fetchStyle = \PDO::FETCH_ASSOC): bool|array
+    public function getAllRows(int $fetchStyle = \PDO::FETCH_ASSOC): bool|array
     {
         $result = $this->statement->fetchAll($fetchStyle);
         return !empty($result) ? $result : false;
