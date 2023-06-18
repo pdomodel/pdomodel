@@ -9,6 +9,7 @@ use function PHPUnit\Framework\throwException;
 class CreateTableBuilder
 {
     protected string $tableName;
+    protected bool $ifNotExists = true;
     protected array $columns;
     protected ?string $engine = null;
     protected ?PDO $connection = null;
@@ -42,6 +43,12 @@ class CreateTableBuilder
         return $this;
     }
 
+    public function ifNotExists(bool $value = true)
+    {
+        $this->ifNotExists = $value;
+        return $this;
+    }
+
     public function setEngine(string $engineName = 'INNODB')
     {
         $this->engine = $engineName;
@@ -50,7 +57,11 @@ class CreateTableBuilder
 
     public function buildSql(): string
     {
-        $result = "CREATE TABLE $this->tableName ";
+        $sql = "CREATE TABLE ";
+        if ($this->ifNotExists) {
+            $sql .= 'IF NOT EXISTS ';
+        }
+        $sql .= $this->tableName;
         $columnStrings = [];
         foreach ($this->columns as $column) {
             $parts = [$column['name']];
@@ -67,11 +78,11 @@ class CreateTableBuilder
             }
             $columnStrings[] = join(' ', $parts);
         }
-        $result .= '(' . join(',', $columnStrings) . ') ';
+        $sql .= ' (' . join(',', $columnStrings) . ') ';
         if ($this->engine) {
-            $result .= 'ENGINE=' . $this->engine;
+            $sql .= 'ENGINE=' . $this->engine;
         }
-        return $result;
+        return $sql;
     }
 
     public function execute(): bool|int
