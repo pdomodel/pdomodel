@@ -27,6 +27,7 @@ class CreateTableBuilder
         bool   $autoIncrement = false,
         bool   $primaryKey = false,
         bool   $notNull = false,
+        bool   $unique = false,
     ): self
     {
         $this->columns[] = [
@@ -35,6 +36,7 @@ class CreateTableBuilder
             'AUTO_INCREMENT' => $autoIncrement,
             'PRIMARY KEY' => $primaryKey,
             'NOT NULL' => $notNull,
+            'UNIQUE' => $unique,
         ];
 
         return $this;
@@ -53,7 +55,12 @@ class CreateTableBuilder
         foreach ($this->columns as $column) {
             $parts = [$column['name']];
             $parts[] = $column['type'];
-            foreach (['AUTO_INCREMENT', 'PRIMARY KEY', 'NOT NULL'] as $constraint) {
+            foreach ([
+                         'AUTO_INCREMENT',
+                         'PRIMARY KEY',
+                         'NOT NULL',
+                         'UNIQUE',
+                     ] as $constraint) {
                 if ($column[$constraint]) {
                     $parts[] = $constraint;
                 }
