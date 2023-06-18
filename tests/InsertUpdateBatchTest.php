@@ -23,8 +23,8 @@ class InsertUpdateBatchTest extends TestCase
             ->column('count')
             ->execute();
 
-        $model->insertUpdateBatch([$targetData], ['foo', 'count']);
+        $model->insertUpdateBatch([$targetData, $targetData], incrementColumns: ['count']);
         $resultData = $model->select()->whereEqual('foo', 'bar')->getFirstRow();
-        $this->assertEquals($targetData, $resultData);
+        $this->assertEquals(['id' => 1, 'foo' => 'bar', 'count' => 2], $resultData);
     }
 }

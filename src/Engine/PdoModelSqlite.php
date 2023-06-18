@@ -8,13 +8,13 @@ use PdoModel\PdoModelException;
 
 class PdoModelSqlite extends PdoModel
 {
-    public function insertUpdate(array $insertData, array $updateColumns): int
+    public function insertUpdate(array $insertData, array $updateColumns = [], array $incrementColumns = []): int
     {
         if (!$this->isDriverSQLite()) {
             return parent::insertUpdate($insertData, $updateColumns);
         }
-        if (empty($insertData) || empty($updateColumns)) {
-            throw new PdoModelException('InsertUpdate arrays insertData and updateColumns cant be empty');
+        if (empty($insertData) || (empty($updateColumns) && empty($incrementColumns))) {
+            throw new PdoModelException('InsertUpdate arrays insertData and updateColumns or incrementColumns cant be empty');
         }
         $updatePairs = [];
         $values = [];
@@ -33,9 +33,15 @@ class PdoModelSqlite extends PdoModel
             }
             $values[] = $insertData[$column];
         }
-        // TODO check SQL
+        foreach ($incrementColumns as $column) {
+            $updatePairs[] = "`{$column}` = `{$column}` + ?";
+            if (!isset($insertData[$column])) {
+                throw new PdoModelException("InsertUpdate incrementColumn '$column' not in array of insert data " . json_encode($insertData));
+            }
+            $values[] = $insertData[$column];
+        }
         $sql = "INSERT INTO `" . $this->getTable() . "` (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $markers) . ")"
-            . " ON CONFLICT(" . static::PRIMARY_KEY . ") DO UPDATE SET" . implode(', ', $updatePairs);
+            . " ON CONFLICT(" . static::PRIMARY_KEY . ") DO UPDATE SET " . implode(', ', $updatePairs);
         $this->execute($sql, $values);
         return $this->getLastInsertId();
     }
@@ -46,17 +52,16 @@ class PdoModelSqlite extends PdoModel
         if (!$this->isDriverSQLite()) {
             return parent::insertUpdateBatch($insertRows, $updateColumns, $incrementColumns);
         }
-        if (empty($incrementColumns)) {
+        if (!empty($incrementColumns)) {
             foreach ($insertRows as $row) {
-                $this->insertUpdate($row, $updateColumns);
-            }
-            return true;
-        } else {
-            foreach ($insertRows as $row) {
-                // todo
+                $this->insertUpdate($row, incrementColumns: $incrementColumns);
             }
             return true;
         }
+        foreach ($insertRows as $row) {
+            $this->insertUpdate($row, $updateColumns);
+        }
+        return true;
     }
 
     protected function isDriverSQLite(): bool

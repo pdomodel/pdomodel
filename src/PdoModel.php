@@ -150,6 +150,7 @@ class PdoModel
             }
             $values[] = $insertData[$column];
         }
+        // TODO check for MYSQL
         $sql = "INSERT INTO `" . $this->getTable() . "` SET " . implode(', ', $insertPairs)
             . " ON DUPLICATE KEY UPDATE " . implode(', ', $updatePairs);
         $this->execute($sql, $values);
