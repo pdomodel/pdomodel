@@ -68,4 +68,16 @@ class PdoModelSqlite extends PdoModel
     {
         return strtolower($this->connection->getAttribute(PDO::ATTR_DRIVER_NAME)) == 'sqlite';
     }
+
+    protected function getIndexData(): bool|array
+    {
+        return $this->raw("
+            SELECT ii.name as `column`, `seq`, `unique`, `origin`, `partial`, `seqno`, `cid`
+              FROM sqlite_schema AS m,
+                   pragma_index_list(m.name) AS il,
+                   pragma_index_info(il.name) AS ii
+             WHERE m.type='table'
+             AND m.name='test_table'
+        ")->getAllRows();
+    }
 }

@@ -4,6 +4,7 @@ namespace PdoModel\Builder;
 
 use PDO;
 use PdoModel\PdoModelException;
+use PdoModel\PdoStatementFetcher;
 use PDOStatement;
 
 class SelectorBuilder
@@ -124,37 +125,37 @@ class SelectorBuilder
         return $sql;
     }
 
-    protected function execute(): PDOStatement
+    public function raw(string $sql, array $preparedParameterValues = []): PdoStatementFetcher
     {
         $sth = $this->connection->prepare($this->buildSql());
         if (!$sth) {
             throw new PdoModelException('Error in creating STH ' . $sth->errorInfo()[2]);
         }
-        $succeed = $sth->execute($this->preparedParameterValues);
+        $succeed = $sth->execute($preparedParameterValues);
         if (!$succeed) {
             throw new PdoModelException($sth->errorInfo()[2]);
         }
-        return $sth;
+        return new PdoStatementFetcher($sth);
     }
 
     public function getFirstRow($fetchStyle = \PDO::FETCH_ASSOC): bool|array
     {
-        return $this->execute()->fetch($fetchStyle);
+        return $this->raw($this->buildSql(), $this->preparedParameterValues)->getFirstRow($fetchStyle);
     }
 
     public function getOneValue($columnName)
     {
-        return $this->getFirstRow()[$columnName];
+        return $this->raw($this->buildSql(), $this->preparedParameterValues)->getOneValue($columnName);
     }
 
     public function getColumnValues($columnNumber = 0): bool|array
     {
-        return $this->execute()->fetchAll(\PDO::FETCH_COLUMN, $columnNumber);
+        return $this->raw($this->buildSql(), $this->preparedParameterValues)->getColumnValues($columnNumber);
     }
 
     public function getAllRows($fetchStyle = \PDO::FETCH_ASSOC): bool|array
     {
-        return $this->execute()->fetchAll($fetchStyle);
+        return $this->raw($this->buildSql(), $this->preparedParameterValues)->getAllRows($fetchStyle);
     }
 
 }
