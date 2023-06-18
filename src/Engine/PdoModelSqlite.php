@@ -40,10 +40,13 @@ class PdoModelSqlite extends PdoModel
             }
             $values[] = $insertData[$column];
         }
-        $conflictColumns = $this->getUniqueColumns() ?? [static::PRIMARY_KEY];
-        $primaryIndex = array_search(static::PRIMARY_KEY, $conflictColumns);
-        if ($primaryIndex !== false) {
-            unset($conflictColumns[$primaryIndex]);
+        if ($conflictColumns = $this->getUniqueColumns()) {
+            $primaryIndex = array_search(static::PRIMARY_KEY, $conflictColumns);
+            if ($primaryIndex !== false) {
+                unset($conflictColumns[$primaryIndex]);
+            }
+        } else {
+            $conflictColumns = [static::PRIMARY_KEY];
         }
         $sql = "INSERT INTO `" . $this->getTable() . "` (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $markers) . ")"
             . " ON CONFLICT(" . implode(', ', $conflictColumns) . ") DO UPDATE SET " . implode(', ', $updatePairs);
