@@ -40,8 +40,13 @@ class PdoModelSqlite extends PdoModel
             }
             $values[] = $insertData[$column];
         }
+        $conflictColumns = $this->getUniqueColumns() ?? [static::PRIMARY_KEY];
+        $primaryIndex = array_search(static::PRIMARY_KEY, $conflictColumns);
+        if ($primaryIndex !== false) {
+            unset($conflictColumns[$primaryIndex]);
+        }
         $sql = "INSERT INTO `" . $this->getTable() . "` (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $markers) . ")"
-            . " ON CONFLICT(" . static::PRIMARY_KEY . ") DO UPDATE SET " . implode(', ', $updatePairs);
+            . " ON CONFLICT(" . implode(', ', $conflictColumns) . ") DO UPDATE SET " . implode(', ', $updatePairs);
         $this->execute($sql, $values);
         return $this->getLastInsertId();
     }
@@ -67,6 +72,15 @@ class PdoModelSqlite extends PdoModel
     protected function isDriverSQLite(): bool
     {
         return strtolower($this->connection->getAttribute(PDO::ATTR_DRIVER_NAME)) == 'sqlite';
+    }
+
+    protected function getUniqueColumns()
+    {
+        $indexData = $this->getIndexData();
+        if (!$indexData) {
+            return false;
+        }
+        return array_column($indexData, 'column');
     }
 
     protected function getIndexData(): bool|array
