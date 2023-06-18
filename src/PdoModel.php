@@ -37,6 +37,12 @@ class PdoModel
         return (new SelectorBuilder($this->getTable(), $this->connection))->columns($columns);
     }
 
+    public function raw(string $sql, array $preparedParameterValues = []): PdoStatementFetcher
+    {
+        $sth = $this->executeAndReturnStatement($sql, $preparedParameterValues);
+        return new PdoStatementFetcher($sth);
+    }
+
     public function find(string $primaryKeyValue): array
     {
         return $this->select()->whereEqual(static::PRIMARY_KEY, $primaryKeyValue)->getFirstRow();
@@ -245,12 +251,18 @@ class PdoModel
         return $this->connection->lastInsertId($sequenceName);
     }
 
-    public function createTable(string $name): CreateTableBuilder
+    public function createTable(string $tableName): CreateTableBuilder
     {
-        return new CreateTableBuilder($name, $this->connection);
+        return new CreateTableBuilder($tableName, $this->connection);
     }
 
     protected function execute(string $query, array $data = []): bool
+    {
+        $sth = $this->executeAndReturnStatement($query, $data);
+        return $sth->rowCount() > 0;
+    }
+
+    protected function executeAndReturnStatement(string $query, array $data = []): \PDOStatement
     {
         try {
             $sth = $this->connection->prepare($query);
@@ -264,9 +276,9 @@ class PdoModel
             if (!$succeed) {
                 throw new PdoModelException($sth->errorInfo()[2]);
             }
-            return $sth->rowCount() > 0;
-
+            return $sth;
         } catch (\PDOException $ex) {
+            $query = str_replace("\n", ' ', $query);
             error_log(" !!! PDO thrown an error " . $ex->getMessage() . " --- for SQL query: $query\n");
             throw $ex;
         }
