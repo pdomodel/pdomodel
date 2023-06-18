@@ -252,17 +252,23 @@ class PdoModel
 
     protected function execute(string $query, array $data = []): bool
     {
-        $sth = $this->connection->prepare($query);
-        if (!$sth) {
-            throw new PdoModelException('Error in creating STH ' . $sth->errorInfo()[2]);
+        try {
+            $sth = $this->connection->prepare($query);
+            if (!$sth) {
+                throw new PdoModelException('Error in creating STH ' . $sth->errorInfo()[2]);
+            }
+            if ($data && !array_is_list($data)) {
+                throw new PdoModelException('Wrong statement values structure ' . json_encode($data));
+            }
+            $succeed = $sth->execute($data);
+            if (!$succeed) {
+                throw new PdoModelException($sth->errorInfo()[2]);
+            }
+            return $sth->rowCount() > 0;
+
+        } catch (\PDOException $ex) {
+            error_log(" !!! PDO thrown an error " . $ex->getMessage() . " --- for SQL query: $query\n");
+            throw $ex;
         }
-        if ($data && !array_is_list($data)) {
-            throw new PdoModelException('Wrong statement values structure ' . json_encode($data));
-        }
-        $succeed = $sth->execute($data);
-        if (!$succeed) {
-            throw new PdoModelException($sth->errorInfo()[2]);
-        }
-        return $sth->rowCount() > 0;
     }
 }
