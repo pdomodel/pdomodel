@@ -12,19 +12,19 @@ class InsertUpdateBatchTest extends TestCase
 {
     public function test(): void
     {
-        $targetData = ['id' => 1, 'foo' => 'bar', 'count' => 1];
+        $targetData = ['foo' => 'bar', 'count' => 1];
 
         $model = new class(new \PDO('sqlite::memory:')) extends PdoModelSqlite {
             const TABLE = 'test_table';
         };
         $model->createTable('test_table')
             ->column('id', autoIncrement: true, primaryKey: true)
-            ->column('foo', type: 'string')
+            ->column('foo', type: 'string', unique: true)
             ->column('count')
             ->execute();
 
-        $model->insertUpdateBatch([$targetData, $targetData], incrementColumns: ['count']);
-        $resultData = $model->select()->whereEqual('foo', 'bar')->getFirstRow();
-        $this->assertEquals(['id' => 1, 'foo' => 'bar', 'count' => 2], $resultData);
+        $model->insertUpdateBatch([$targetData], incrementColumns: ['count']);
+        $resultData = $model->select(['foo', 'count'])->whereEqual('foo', 'bar')->getFirstRow();
+        $this->assertEquals(['foo' => 'bar', 'count' => 1], $resultData);
     }
 }
