@@ -65,15 +65,25 @@ class CreateTableBuilder
         $columnStrings = [];
         foreach ($this->columns as $column) {
             $parts = [$column['name']];
+            if ($this->isDriverSQLite() && $column['AUTO_INCREMENT']) {
+                $column['type'] = 'INTEGER';
+            }
             $parts[] = $column['type'];
             foreach ([
-                         'AUTO_INCREMENT',
                          'PRIMARY KEY',
                          'NOT NULL',
                          'UNIQUE',
                      ] as $constraint) {
                 if ($column[$constraint]) {
                     $parts[] = $constraint;
+                }
+            }
+            if ($column['AUTO_INCREMENT']) {
+                if ($this->isDriverSQLite()) {
+                    $column['type'] = 'INTEGER';
+                    $parts[] = 'AUTOINCREMENT';
+                } else {
+                    $parts[] = 'AUTO_INCREMENT';
                 }
             }
             $columnStrings[] = join(' ', $parts);
@@ -87,9 +97,22 @@ class CreateTableBuilder
 
     public function execute(): bool|int
     {
+        $query = $this->buildSql();
         if (!$this->connection) {
             throw new \Exception('You should pass PDO instance for using this method');
         }
-        return $this->connection->exec($this->buildSql());
+        try {
+            return $this->connection->exec($query);
+        } catch (\PDOException $ex) {
+            $query = str_replace("\n", ' ', $query);
+            error_log(" !!! PDO thrown an error " . $ex->getMessage() . " --- for SQL query: $query\n");
+            throw $ex;
+        }
     }
+
+    protected function isDriverSQLite(): bool
+    {
+        return strtolower($this->connection->getAttribute(PDO::ATTR_DRIVER_NAME)) == 'sqlite';
+    }
+
 }

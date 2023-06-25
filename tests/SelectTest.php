@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests;
+
 use PdoModel\PdoModel;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;

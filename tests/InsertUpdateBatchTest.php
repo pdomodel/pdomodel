@@ -1,5 +1,7 @@
 <?php
 
+namespace Tests;
+
 use PHPUnit\Framework\Attributes\CoversClass;
 use PdoModel\Engine\PdoModelSqlite;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -25,6 +27,6 @@ class InsertUpdateBatchTest extends TestCase
 
         $model->insertUpdateBatch([$targetData, $targetData], incrementColumns: ['count']);
         $resultData = $model->select()->whereEqual('foo', 'bar')->getFirstRow();
-        $this->assertEquals(['id' => null, 'foo' => 'bar', 'count' => 2], $resultData);
+        $this->assertEquals(['id' => 1, 'foo' => 'bar', 'count' => 2], $resultData);
     }
 }
