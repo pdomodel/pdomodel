@@ -25,12 +25,30 @@ Install via composer
 composer require pdomodel/pdomodel
 ```
 
-For Symfony just add PDO to DI in service config
+## Connection
+You need to create usual PDO connection:
+```php
+$connection = new \PDO(
+    "mysql:host=127.0.0.1;dbname=YOURDBNAME;charset=utf8mb4",
+    "YOURUSER",
+    "YOURPASSWORD",
+    [
+            \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+            \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+    ])
+```
+
+Example for creating PDO in Symfony service config:
 ```yaml
 PDO:
   class: \PDO
-  factory: ['PdoModel\PdoFactory', 'createConnection']
-  arguments: ['127.0.0.1', 'dbname', 'username', 'password']
+  arguments:
+    - "mysql:host=127.0.0.1;dbname=YOURDBNAME;charset=utf8mb4"
+    - "YOURUSER"
+    - "YOURPASSWORD"
+    -
+      !php/const PDO::ATTR_DEFAULT_FETCH_MODE: !php/const PDO::FETCH_ASSOC
+      !php/const PDO::ATTR_ERRMODE: !php/const PDO::ERRMODE_EXCEPTION
 ```
 
 ### Tests
