@@ -11,6 +11,8 @@ class CreateTableBuilder
     protected string $tableName;
     protected bool $ifNotExists = true;
     protected array $columns;
+
+    protected string $collation = 'utf8mb4_0900_ai_ci';
     protected ?string $engine = null;
     protected ?PDO $connection = null;
 
@@ -29,7 +31,7 @@ class CreateTableBuilder
         bool   $primaryKey = false,
         bool   $notNull = false,
         bool   $unique = false,
-    ): self
+    ): static
     {
         $this->columns[] = [
             'name' => $name,
@@ -43,15 +45,21 @@ class CreateTableBuilder
         return $this;
     }
 
-    public function ifNotExists(bool $value = true)
+    public function ifNotExists(bool $value = true): static
     {
         $this->ifNotExists = $value;
         return $this;
     }
 
-    public function setEngine(string $engineName = 'INNODB')
+    public function setEngine(string $engineName = 'INNODB'): static
     {
         $this->engine = $engineName;
+        return $this;
+    }
+
+    public function setCollation(string $collation = 'utf8mb4_0900_ai_ci'): static
+    {
+        $this->collation = $collation;
         return $this;
     }
 
@@ -92,6 +100,9 @@ class CreateTableBuilder
         if ($this->engine) {
             $sql .= 'ENGINE=' . $this->engine;
         }
+        if (!$this->isDriverSQLite()) {
+            $sql .= 'COLLATION ' . $this->collation;
+        }
         return $sql;
     }
 
@@ -114,5 +125,4 @@ class CreateTableBuilder
     {
         return strtolower($this->connection->getAttribute(PDO::ATTR_DRIVER_NAME)) == 'sqlite';
     }
-
 }
