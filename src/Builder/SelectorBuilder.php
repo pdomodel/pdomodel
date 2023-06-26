@@ -19,6 +19,7 @@ class SelectorBuilder
     protected ?string $collate = null;
 
     protected array $whereParts = [];
+    protected array $whereOrParts = [];
     protected array $preparedParameterValues = [];
 
     protected string $columns = '*';
@@ -36,6 +37,17 @@ class SelectorBuilder
             throw new PdoModelException('Wrong SQL operand ' . $operand);
         }
         $this->whereParts[] = "$column $operand ?";
+        $this->preparedParameterValues[] = $value;
+        return $this;
+    }
+
+    public function orWhere(string $column, string $operand, string $value = null): static
+    {
+        $operand = trim(strtoupper($operand));
+        if (!in_array($operand, ['>', '<', '=', '!=', '>=', '<=', 'LIKE', 'NOT LIKE', 'IS', 'IS NOT'])) {
+            throw new PdoModelException('Wrong SQL operand ' . $operand);
+        }
+        $this->whereOrParts[] = "$column $operand ?";
         $this->preparedParameterValues[] = $value;
         return $this;
     }
@@ -117,7 +129,12 @@ class SelectorBuilder
     {
         $sql = "SELECT $this->columns FROM $this->tableName ";
         if (!empty($this->whereParts)) {
-            $sql .= ' WHERE ' . implode(' AND ', $this->whereParts) . ' ';
+            $sql .= ' WHERE (' . implode(' AND ', $this->whereParts) . ') ';
+        }
+        if (!empty($this->whereOrParts)) {
+            foreach ($this->whereOrParts as $statement) {
+                $sql .= ' OR (' . $statement . ') ';
+            }
         }
         if ($this->groupBy !== null) {
             $sql .= " GROUP BY " . $this->groupBy;

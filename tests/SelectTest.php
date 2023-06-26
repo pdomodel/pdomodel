@@ -45,4 +45,27 @@ class SelectTest extends TestCase
             ->getAllRows();
         $this->assertEquals($targetResult, $result);
     }
+
+    public function testOr()
+    {
+        $insertData = [
+            ['foo' => 1],
+            ['foo' => 2],
+            ['foo' => 3],
+        ];
+
+        $model = (new PdoModel(new \PDO('sqlite::memory:')))->setTable('test_table');
+        $model->createTable('test_table')
+            ->column('foo', type: 'string')
+            ->execute();
+        $model->insertBatch($insertData);
+
+
+        $actualResult = $model->select()
+            ->where('foo', '=', 1)
+            ->orWhere('foo', '=', 2)
+            ->orWhere('foo', '=', 3)
+            ->getAllRows();
+        $this->assertEquals($insertData, $actualResult);
+    }
 }
