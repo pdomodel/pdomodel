@@ -41,6 +41,7 @@ class SelectTest extends TestCase
             ->limit(3)
             ->offset(0)
             ->groupBy('day')
+            ->collate('utf8mb4_0900_ai_ci')
             ->getAllRows();
         $this->assertEquals($targetResult, $result);
     }

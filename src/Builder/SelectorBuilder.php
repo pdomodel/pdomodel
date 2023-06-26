@@ -16,6 +16,8 @@ class SelectorBuilder
     protected ?string $orderBy = null;
     protected ?string $groupBy = null;
 
+    protected ?string $collate = null;
+
     protected array $whereParts = [];
     protected array $preparedParameterValues = [];
 
@@ -93,6 +95,12 @@ class SelectorBuilder
         return $this;
     }
 
+    public function collate(string $value = 'utf8mb4_0900_ai_ci'): static
+    {
+        $this->collate = $value;
+        return $this;
+    }
+
     public function columns(array|string $columns): static
     {
         if (is_array($columns)) {
@@ -121,6 +129,9 @@ class SelectorBuilder
             $sql .= " LIMIT $this->offset , $this->limit ";
         } elseif ($this->limit !== null) {
             $sql .= " LIMIT " . $this->limit;
+        }
+        if ($this->collate !== null) {
+            $sql .= " COLLATE " . $this->collate;
         }
         return $sql;
     }
