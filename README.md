@@ -1,32 +1,33 @@
 # PdoModel - helper methods for MySql and Query Builder with raw PDO speed
+Example of using:
 ```php
 class YoutubeVideosModel extends \PdoModel\PdoModel
 {
     const TABLE = 'youtube_videos';
-}
 
-$connection = \PdoModel\PdoFactory::createConnection('127.0.0.1', 'dbname', 'username', 'password');
-$youtubeVideosModel = new YoutubeVideosModel($connection);
+    protected function create($title, $src) {
+        $this->insert(['title' => $title, 'src' => $src]);
+    }
+}
+$youtubeVideosModel = new YoutubeVideosModel(new \Pdo());
 
 $result = $youtubeVideosModel->select(['id', 'likes', 'url'])
-            ->whereEqual('published', 1)
-            ->where('likes', '>', 100)
-            ->orderBy('likes desc')
-            ->limit(100)
-            ->offset(2000)
-            ->groupBy('author')
-            ->getAllRows();
+    ->whereEqual('published', 1)
+    ->where('likes', '>', 100)
+    ->orderBy('likes desc')
+    ->limit(100)
+    ->offset(2000)
+    ->groupBy('author')
+    ->getAllRows();
 var_dump($result);
 ```
 
 ## Setup
-Install via composer
 ```shell
 composer require pdomodel/pdomodel
 ```
 
-## Connection
-You need to create usual PDO connection:
+You need to create a usual PDO connection:
 ```php
 $connection = new \PDO(
     "mysql:host=127.0.0.1;dbname=YOURDBNAME;charset=utf8mb4",
@@ -35,7 +36,8 @@ $connection = new \PDO(
     [
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
             \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-    ])
+    ]
+);
 ```
 
 Example for creating PDO in Symfony service config:
@@ -51,7 +53,7 @@ PDO:
       !php/const PDO::ATTR_ERRMODE: !php/const PDO::ERRMODE_EXCEPTION
 ```
 
-### Tests
+## Tests
 ```shell
 # run tests
 ./vendor/bin/phpunit
