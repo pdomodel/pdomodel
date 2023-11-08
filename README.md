@@ -53,6 +53,12 @@ PDO:
       !php/const PDO::ATTR_ERRMODE: !php/const PDO::ERRMODE_EXCEPTION
 ```
 
+SQLite example
+```php
+$connection = new \PDO('sqlite::db.sqlite');
+new PdoModel($connection)->setTable('test_table');
+```
+
 ## Tests
 ```shell
 # run tests
