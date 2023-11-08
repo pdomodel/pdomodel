@@ -24,7 +24,7 @@ var_dump($result);
 
 ## Setup
 ```shell
-composer require pdomodel/pdomodel
+composer require phpset/pdomodel
 ```
 
 You need to create a usual PDO connection:
