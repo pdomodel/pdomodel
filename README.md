@@ -27,6 +27,12 @@ var_dump($result);
 composer require phpset/pdomodel
 ```
 
+Check that you have proper PHP extentions
+```shell
+# Change 8.2 below to your current PHP version
+sudo apt install php8.2-pdo php8.2-pdo-mysql php8.2-pdo-sqlite
+```
+
 You need to create a usual PDO connection:
 ```php
 $connection = new \PDO(
