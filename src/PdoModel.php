@@ -43,7 +43,7 @@ class PdoModel
         return new PdoStatementFetcher($sth);
     }
 
-    public function find(string $primaryKeyValue): array
+    public function find(string $primaryKeyValue): bool|array
     {
         return $this->select()->whereEqual(static::PRIMARY_KEY, $primaryKeyValue)->getFirstRow();
     }
