@@ -12,7 +12,7 @@ class CreateTableBuilder
     protected bool $ifNotExists = true;
     protected array $columns;
 
-    protected string $collation = 'utf8mb4_0900_ai_ci';
+    protected string $collation = 'utf8mb4_general_ci';
     protected ?string $engine = null;
     protected ?PDO $connection = null;
 
