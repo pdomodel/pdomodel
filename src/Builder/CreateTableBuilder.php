@@ -57,7 +57,7 @@ class CreateTableBuilder
         return $this;
     }
 
-    public function setCollation(string $collation = 'utf8mb4_0900_ai_ci'): static
+    public function setCollation(string $collation = 'utf8mb4_general_ci'): static
     {
         $this->collation = $collation;
         return $this;
@@ -101,7 +101,7 @@ class CreateTableBuilder
             $sql .= 'ENGINE=' . $this->engine;
         }
         if (!$this->isDriverSQLite()) {
-            $sql .= 'COLLATION ' . $this->collation;
+            $sql .= 'COLLATE ' . $this->collation;
         }
         return $sql;
     }
