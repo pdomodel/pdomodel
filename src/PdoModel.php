@@ -279,7 +279,11 @@ class PdoModel
             return $sth;
         } catch (\PDOException $ex) {
             $query = str_replace("\n", ' ', $query);
-            error_log(" !!! PDO thrown an error " . $ex->getMessage() . " --- for SQL query: $query\n");
+            $errorText = "!!! PDO thrown an error " . $ex->getMessage() . " --- for SQL query: $query";
+            if (count($data)) {
+                $errorText .= " with data: " . json_encode($data);
+            }
+            error_log("$errorText\n");
             throw $ex;
         }
     }
