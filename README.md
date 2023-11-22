@@ -73,3 +73,7 @@ new PdoModel($connection)->setTable('test_table');
 # Check coverage
 php -dxdebug.mode=coverage ./vendor/bin/phpunit --coverage-text
 ```
+
+## Inspired by
+- [Laravel DB](https://github.com/illuminate/database)
+- [Medoo](https://github.com/catfan/Medoo)
