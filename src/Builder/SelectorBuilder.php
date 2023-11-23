@@ -155,7 +155,7 @@ class SelectorBuilder
 
     public function raw(string $sql, array $preparedParameterValues = []): PdoStatementFetcher
     {
-        $sth = $this->connection->prepare($this->buildSql());
+        $sth = $this->connection->prepare($sql);
         if (!$sth) {
             throw new PdoModelException('Error in creating STH ' . $sth->errorInfo()[2]);
         }
